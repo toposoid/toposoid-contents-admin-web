@@ -14,7 +14,5 @@ services:
         ipv4_address: 172.30.0.3
     ports:
       - 9012:9012
-    depends_on:
-      - weaviate
 
     

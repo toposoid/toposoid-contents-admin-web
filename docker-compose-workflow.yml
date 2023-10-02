@@ -11,14 +11,9 @@ services:
   toposoid-contents-admin-web:
     image: toposoid-contents-admin-web:0.5-SNAPSHOT
     tty: true
-    environment:
-      - TOPOSOID_WEAVIATE_HOST=172.30.0.2
-      - TOPOSOID_WEAVIATE_PORT=8080
-      - TOPOSOID_WEAVIATE_SIMILARITY_THRESHOLD=0.9
     networks:
       app_net:
         ipv4_address: 172.30.0.3
     ports:
       - 9012:9012
-    depends_on:
   
