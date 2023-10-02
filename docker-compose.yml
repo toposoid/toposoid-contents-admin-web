@@ -1,0 +1,20 @@
+version: '3.4'
+networks:
+  app_net:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.30.0.0/24
+services:
+  toposoid-contents-admin-web:
+    image: toposoid/toposoid-contents-admin-web:0.5-SNAPSHOT
+    networks:
+      app_net:
+        ipv4_address: 172.30.0.3
+    ports:
+      - 9012:9012
+    depends_on:
+      - weaviate
+
+    
