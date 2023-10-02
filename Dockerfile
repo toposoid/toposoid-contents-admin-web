@@ -4,8 +4,8 @@ WORKDIR /app
 ARG TARGET_BRANCH
 ENV DEPLOYMENT=local
 
-RUN apt-get update \
-&& apt-get -y install git \
+RUN apt-get update && apt-get upgrade -y \
+&& apt-get -y install git libgl1-mesa-dev \
 && git clone https://github.com/toposoid/toposoid-contents-admin-web.git \
 && cd toposoid-contents-admin-web \
 && git fetch origin ${TARGET_BRANCH} \
