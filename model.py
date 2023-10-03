@@ -19,6 +19,10 @@ from typing import List
 import logging
 LOG = logging.getLogger(__name__)
 
+#Status Information
+class StatusInfo(BaseModel):
+    status:str
+    message:str
 
 class Reference(BaseModel):
     url:str
@@ -37,8 +41,8 @@ class KnowledgeForImage(BaseModel):
     id:str
     imageReference:ImageReference
 
-#Status Information
-class StatusInfo(BaseModel):
-    status:str
-    message:str
+class RegistContentResult(BaseModel):
+    url:str
+    statusInfo:StatusInfo
+
 

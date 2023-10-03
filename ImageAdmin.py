@@ -32,3 +32,5 @@ class ImageAdmin():
         
         #削除
         os.remove('tmp/' + knowledgeForImage.id + "." + fmt)
+
+        return os.environ["TOPOSOID_CONTENTS_URL"] + "images/" + knowledgeForImage.id + "." + fmt

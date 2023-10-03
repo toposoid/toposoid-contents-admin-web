@@ -15,7 +15,7 @@
  '''
 
 from fastapi import FastAPI
-from model import KnowledgeForImage, StatusInfo
+from model import KnowledgeForImage, StatusInfo, RegistContentResult
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from starlette.middleware.cors import CORSMiddleware
@@ -50,10 +50,8 @@ app.mount("/contents", StaticFiles(directory="contents"), name="contents")
           summary='regist image file')
 def registImage(knowledgeForImage:KnowledgeForImage):
     try:                
-        imageAdmin.registImage(knowledgeForImage)
-        return JSONResponse(content=jsonable_encoder(StatusInfo(status="OK", message="")))
+        url = imageAdmin.registImage(knowledgeForImage)
+        return JSONResponse(content=jsonable_encoder(RegistContentResult(url=url, statusInfo=StatusInfo(status="OK", message="")) ))
     except Exception as e:
         LOG.error(traceback.format_exc())
-        return JSONResponse(content=jsonable_encoder(StatusInfo(status="ERROR", message=traceback.format_exc())))
-
-
+        return JSONResponse(content=jsonable_encoder(RegistContentResult(url="", statusInfo=StatusInfo(status="ERROR", message=traceback.format_exc()))))

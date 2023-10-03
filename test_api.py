@@ -15,7 +15,7 @@
  '''
 from fastapi.testclient import TestClient
 from api import app
-from model import StatusInfo
+from model import StatusInfo, RegistContentResult
 import numpy as np
 from time import sleep
 import pytest
@@ -55,8 +55,9 @@ class TestWeaviateAPI(object):
                                 "height": 435}
                             })
         assert response.status_code == 200
-        statusInfo = StatusInfo.parse_obj(response.json())
-        assert statusInfo.status == "OK"
+        registContentResult = RegistContentResult.parse_obj(response.json())
+        assert registContentResult.statusInfo.status == "OK"
+        assert registContentResult.url == os.environ["TOPOSOID_CONTENTS_URL"] + "images/" + self.id + ".jpeg"
         assert os.path.exists('contents/images/' + self.id + ".jpeg")
 
 
