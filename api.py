@@ -50,8 +50,8 @@ app.mount("/contents", StaticFiles(directory="contents"), name="contents")
           summary='regist image file')
 def registImage(knowledgeForImage:KnowledgeForImage):
     try:                
-        url = imageAdmin.registImage(knowledgeForImage)
-        return JSONResponse(content=jsonable_encoder(RegistContentResult(url=url, statusInfo=StatusInfo(status="OK", message="")) ))
+        updatedKnowledgeForImage = imageAdmin.registImage(knowledgeForImage)
+        return JSONResponse(content=jsonable_encoder(RegistContentResult(knowledgeForImage=updatedKnowledgeForImage, statusInfo=StatusInfo(status="OK", message="")) ))
     except Exception as e:
         LOG.error(traceback.format_exc())
-        return JSONResponse(content=jsonable_encoder(RegistContentResult(url="", statusInfo=StatusInfo(status="ERROR", message=traceback.format_exc()))))
+        return JSONResponse(content=jsonable_encoder(RegistContentResult(knowledgeForImage=knowledgeForImage, statusInfo=StatusInfo(status="ERROR", message=traceback.format_exc()))))

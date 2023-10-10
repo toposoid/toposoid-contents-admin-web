@@ -29,6 +29,7 @@ class Reference(BaseModel):
     surface:str
     surfaceIndex: int
     isWholeSentence: bool
+    originalUrlOrReference: str
 
 class ImageReference(BaseModel):
     reference:Reference
@@ -42,7 +43,7 @@ class KnowledgeForImage(BaseModel):
     imageReference:ImageReference
 
 class RegistContentResult(BaseModel):
-    url:str
+    knowledgeForImage:KnowledgeForImage
     statusInfo:StatusInfo
 
 

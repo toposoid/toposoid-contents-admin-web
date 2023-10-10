@@ -44,10 +44,11 @@ class TestWeaviateAPI(object):
                                 "id": self.id,
                                 "imageReference":{
                                 "reference": {
-                                    "url": "http://images.cocodataset.org/val2017/000000039769.jpg",
+                                    "url": "",
                                     "surface": "猫が",
                                     "surfaceIndex": "0",
-                                    "isWholeSentence": False
+                                    "isWholeSentence": False,
+                                    "originalUrlOrReference": "http://images.cocodataset.org/val2017/000000039769.jpg"
                                 },
                                 "x": 27,
                                 "y": 41,
@@ -57,7 +58,7 @@ class TestWeaviateAPI(object):
         assert response.status_code == 200
         registContentResult = RegistContentResult.parse_obj(response.json())
         assert registContentResult.statusInfo.status == "OK"
-        assert registContentResult.url == os.environ["TOPOSOID_CONTENTS_URL"] + "images/" + self.id + ".jpeg"
+        assert registContentResult.knowledgeForImage.imageReference.reference.url == os.environ["TOPOSOID_CONTENTS_URL"] + "images/" + self.id + ".jpeg"
         assert os.path.exists('contents/images/' + self.id + ".jpeg")
 
 

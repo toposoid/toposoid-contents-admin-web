@@ -8,7 +8,7 @@ class ImageAdmin():
     def registImage(self, knowledgeForImage:KnowledgeForImage):
 
         # 画像を取得
-        response = requests.get(knowledgeForImage.imageReference.reference.url)
+        response = requests.get(knowledgeForImage.imageReference.reference.originalUrlOrReference)
         
         # 画像を一時的にファイルに保存
         with open('tmp/' + knowledgeForImage.id, 'wb') as f:
@@ -33,4 +33,7 @@ class ImageAdmin():
         #削除
         os.remove('tmp/' + knowledgeForImage.id + "." + fmt)
 
-        return os.environ["TOPOSOID_CONTENTS_URL"] + "images/" + knowledgeForImage.id + "." + fmt
+
+        knowledgeForImage.imageReference.reference.url = os.environ["TOPOSOID_CONTENTS_URL"] + "images/" + knowledgeForImage.id + "." + fmt
+
+        return knowledgeForImage
