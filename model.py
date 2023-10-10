@@ -44,6 +44,7 @@ class KnowledgeForImage(BaseModel):
 
 class RegistContentResult(BaseModel):
     knowledgeForImage:KnowledgeForImage
+    #knowledgeForOther:knowledgeForOther, //The Other is a feature */
     statusInfo:StatusInfo
 
 
