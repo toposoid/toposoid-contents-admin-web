@@ -3,6 +3,7 @@ import cv2
 from model import KnowledgeForImage
 import os
 import imghdr
+import shutil
 
 class ImageAdmin():
     def registImage(self, knowledgeForImage:KnowledgeForImage):
@@ -17,21 +18,23 @@ class ImageAdmin():
         # 画像フォーマットを取得
         fmt = imghdr.what('tmp/' + knowledgeForImage.id)
 
-        # テンポラリファイル名変更
-        os.rename('tmp/' + knowledgeForImage.id, 'tmp/' + knowledgeForImage.id + "." + fmt)
-        image = cv2.imread('tmp/' + knowledgeForImage.id + "." + fmt)
-        
-        #加工
-        x = knowledgeForImage.imageReference.x
-        y = knowledgeForImage.imageReference.y
-        w = knowledgeForImage.imageReference.weight
-        h = knowledgeForImage.imageReference.height
-
         #保存
-        cv2.imwrite('contents/images/' + knowledgeForImage.id + "." + fmt, image[y:y+h, x:x+w])
-        
-        #削除
-        os.remove('tmp/' + knowledgeForImage.id + "." + fmt)
+        if knowledgeForImage.imageReference.reference.isWholeSentence:
+            shutil.move('tmp/' + knowledgeForImage.id, 'contents/images/' + knowledgeForImage.id + "." + fmt)
+        else:
+            # テンポラリファイル名変更
+            os.rename('tmp/' + knowledgeForImage.id, 'tmp/' + knowledgeForImage.id + "." + fmt)
+
+            image = cv2.imread('tmp/' + knowledgeForImage.id + "." + fmt)            
+            #加工
+            x = knowledgeForImage.imageReference.x
+            y = knowledgeForImage.imageReference.y
+            w = knowledgeForImage.imageReference.weight
+            h = knowledgeForImage.imageReference.height
+
+            cv2.imwrite('contents/images/' + knowledgeForImage.id + "." + fmt, image[y:y+h, x:x+w])
+            #削除
+            os.remove('tmp/' + knowledgeForImage.id + "." + fmt)
 
 
         knowledgeForImage.imageReference.reference.url = os.environ["TOPOSOID_CONTENTS_URL"] + "images/" + knowledgeForImage.id + "." + fmt

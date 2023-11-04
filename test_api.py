@@ -22,26 +22,29 @@ import pytest
 import uuid
 import os
 
-class TestWeaviateAPI(object):
+class TestToposoidContentsAdminWeb(object):
 
     client = TestClient(app)
     vector = list(np.random.rand(768))
-    id = ""
+    id1 = ""
+    id2 = ""
 
     @classmethod
     def setup_class(cls):    
-        cls.id = str(uuid.uuid4())
+        cls.id1 = str(uuid.uuid4())
+        cls.id2 = str(uuid.uuid4())
 
     @classmethod
     def teardown_class(cls):
-        os.remove('contents/images/' + cls.id + ".jpeg")
+        os.remove('contents/images/' + cls.id1 + ".jpeg")
+        os.remove('contents/images/' + cls.id2 + ".jpeg")
         
     def test_registImage(self): 
         
         response = self.client.post("/registImage",
                             headers={"Content-Type": "application/json"},
                             json={
-                                "id": self.id,
+                                "id": self.id1,
                                 "imageReference":{
                                 "reference": {
                                     "url": "",
@@ -58,8 +61,32 @@ class TestWeaviateAPI(object):
         assert response.status_code == 200
         registContentResult = RegistContentResult.parse_obj(response.json())
         assert registContentResult.statusInfo.status == "OK"
-        assert registContentResult.knowledgeForImage.imageReference.reference.url == os.environ["TOPOSOID_CONTENTS_URL"] + "images/" + self.id + ".jpeg"
-        assert os.path.exists('contents/images/' + self.id + ".jpeg")
+        assert registContentResult.knowledgeForImage.imageReference.reference.url == os.environ["TOPOSOID_CONTENTS_URL"] + "images/" + self.id1 + ".jpeg"
+        assert os.path.exists('contents/images/' + self.id1 + ".jpeg")
 
 
 
+    def test_registImage2(self): 
+        
+        response = self.client.post("/registImage",
+                            headers={"Content-Type": "application/json"},
+                            json={
+                                "id": self.id2,
+                                "imageReference":{
+                                "reference": {
+                                    "url": "",
+                                    "surface": "",
+                                    "surfaceIndex": "-1",
+                                    "isWholeSentence": True,
+                                    "originalUrlOrReference": "http://images.cocodataset.org/train2017/000000428746.jpg"
+                                },
+                                "x": 0,
+                                "y": 0,
+                                "weight": 0,
+                                "height": 0}
+                            })
+        assert response.status_code == 200
+        registContentResult = RegistContentResult.parse_obj(response.json())
+        assert registContentResult.statusInfo.status == "OK"
+        assert registContentResult.knowledgeForImage.imageReference.reference.url == os.environ["TOPOSOID_CONTENTS_URL"] + "images/" + self.id2 + ".jpeg"
+        assert os.path.exists('contents/images/' + self.id2 + ".jpeg")
