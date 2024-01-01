@@ -47,10 +47,20 @@ app.add_middleware(
 app.mount("/contents", StaticFiles(directory="contents"), name="contents")
 
 @app.post("/registImage",
-          summary='regist image file')
+          summary='register image files')
 def registImage(knowledgeForImage:KnowledgeForImage):
     try:                
-        updatedKnowledgeForImage = imageAdmin.registImage(knowledgeForImage)
+        updatedKnowledgeForImage = imageAdmin.registImage(knowledgeForImage, False)
+        return JSONResponse(content=jsonable_encoder(RegistContentResult(knowledgeForImage=updatedKnowledgeForImage, statusInfo=StatusInfo(status="OK", message="")) ))
+    except Exception as e:
+        LOG.error(traceback.format_exc())
+        return JSONResponse(content=jsonable_encoder(RegistContentResult(knowledgeForImage=knowledgeForImage, statusInfo=StatusInfo(status="ERROR", message=traceback.format_exc()))))
+
+@app.post("/uploadTemporaryImage",
+          summary='upload image files as temporary')
+def uploadTemporaryImage(knowledgeForImage:KnowledgeForImage):
+    try:                
+        updatedKnowledgeForImage = imageAdmin.registImage(knowledgeForImage, True)
         return JSONResponse(content=jsonable_encoder(RegistContentResult(knowledgeForImage=updatedKnowledgeForImage, statusInfo=StatusInfo(status="OK", message="")) ))
     except Exception as e:
         LOG.error(traceback.format_exc())

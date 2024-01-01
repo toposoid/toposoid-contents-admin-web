@@ -90,3 +90,53 @@ class TestToposoidContentsAdminWeb(object):
         assert registContentResult.statusInfo.status == "OK"
         assert registContentResult.knowledgeForImage.imageReference.reference.url == os.environ["TOPOSOID_CONTENTS_URL"] + "images/" + self.id2 + ".jpeg"
         assert os.path.exists('contents/images/' + self.id2 + ".jpeg")
+
+    def test_uploadTemporaryImage(self): 
+        
+        response = self.client.post("/uploadTemporaryImage",
+                            headers={"Content-Type": "application/json"},
+                            json={
+                                "id": self.id1,
+                                "imageReference":{
+                                "reference": {
+                                    "url": "",
+                                    "surface": "猫が",
+                                    "surfaceIndex": "0",
+                                    "isWholeSentence": False,
+                                    "originalUrlOrReference": "http://images.cocodataset.org/val2017/000000039769.jpg"
+                                },
+                                "x": 27,
+                                "y": 41,
+                                "weight": 287,
+                                "height": 435}
+                            })
+        assert response.status_code == 200
+        registContentResult = RegistContentResult.parse_obj(response.json())
+        assert registContentResult.statusInfo.status == "OK"
+        assert registContentResult.knowledgeForImage.imageReference.reference.url == os.environ["TOPOSOID_CONTENTS_URL"] + "temporaryUse/" + self.id1 + ".jpeg"
+        assert os.path.exists('contents/temporaryUse/' + self.id1 + ".jpeg")
+
+    def test_uploadTemporaryImage2(self): 
+        
+        response = self.client.post("/uploadTemporaryImage",
+                            headers={"Content-Type": "application/json"},
+                            json={
+                                "id": self.id2,
+                                "imageReference":{
+                                "reference": {
+                                    "url": "",
+                                    "surface": "",
+                                    "surfaceIndex": "-1",
+                                    "isWholeSentence": True,
+                                    "originalUrlOrReference": "http://images.cocodataset.org/train2017/000000428746.jpg"
+                                },
+                                "x": 0,
+                                "y": 0,
+                                "weight": 0,
+                                "height": 0}
+                            })
+        assert response.status_code == 200
+        registContentResult = RegistContentResult.parse_obj(response.json())
+        assert registContentResult.statusInfo.status == "OK"
+        assert registContentResult.knowledgeForImage.imageReference.reference.url == os.environ["TOPOSOID_CONTENTS_URL"] + "temporaryUse/" + self.id2 + ".jpeg"
+        assert os.path.exists('contents/temporaryUse/' + self.id2 + ".jpeg")

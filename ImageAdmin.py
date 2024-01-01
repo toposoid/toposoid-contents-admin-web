@@ -6,7 +6,7 @@ import imghdr
 import shutil
 
 class ImageAdmin():
-    def registImage(self, knowledgeForImage:KnowledgeForImage):
+    def registImage(self, knowledgeForImage:KnowledgeForImage, isTemporaryUse = False):
 
         # 画像を取得
         response = requests.get(knowledgeForImage.imageReference.reference.originalUrlOrReference)
@@ -20,7 +20,10 @@ class ImageAdmin():
 
         #保存
         if knowledgeForImage.imageReference.reference.isWholeSentence:
-            shutil.move('tmp/' + knowledgeForImage.id, 'contents/images/' + knowledgeForImage.id + "." + fmt)
+            if isTemporaryUse:
+                shutil.move('tmp/' + knowledgeForImage.id, 'contents/temporaryUse/' + knowledgeForImage.id + "." + fmt)
+            else:
+                shutil.move('tmp/' + knowledgeForImage.id, 'contents/images/' + knowledgeForImage.id + "." + fmt)
         else:
             # テンポラリファイル名変更
             os.rename('tmp/' + knowledgeForImage.id, 'tmp/' + knowledgeForImage.id + "." + fmt)
@@ -31,12 +34,17 @@ class ImageAdmin():
             y = knowledgeForImage.imageReference.y
             w = knowledgeForImage.imageReference.weight
             h = knowledgeForImage.imageReference.height
-
-            cv2.imwrite('contents/images/' + knowledgeForImage.id + "." + fmt, image[y:y+h, x:x+w])
+            
+            if isTemporaryUse:
+                cv2.imwrite('contents/temporaryUse/' + knowledgeForImage.id + "." + fmt, image[y:y+h, x:x+w])
+            else:
+                cv2.imwrite('contents/images/' + knowledgeForImage.id + "." + fmt, image[y:y+h, x:x+w])
             #削除
             os.remove('tmp/' + knowledgeForImage.id + "." + fmt)
 
-
-        knowledgeForImage.imageReference.reference.url = os.environ["TOPOSOID_CONTENTS_URL"] + "images/" + knowledgeForImage.id + "." + fmt
+        if isTemporaryUse:
+            knowledgeForImage.imageReference.reference.url = os.environ["TOPOSOID_CONTENTS_URL"] + "temporaryUse/" + knowledgeForImage.id + "." + fmt
+        else:
+            knowledgeForImage.imageReference.reference.url = os.environ["TOPOSOID_CONTENTS_URL"] + "images/" + knowledgeForImage.id + "." + fmt
 
         return knowledgeForImage
