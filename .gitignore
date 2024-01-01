@@ -168,3 +168,5 @@ contents/images/*
 !contents/images/.gitkeep
 tmp/*
 !tmp/.gitkeep
+contents/temporaryUse/*
+!contents/temporaryUse/.gitkeep
