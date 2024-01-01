@@ -13,6 +13,8 @@ RUN apt-get update && apt-get upgrade -y \
 && pip install --no-cache-dir --trusted-host pypi.python.org -r requirements.txt
 
 COPY cron-toposoid-contents-admin-web /etc/cron.d/
-RUN chmod 644 /etc/cron.d/cron-toposoid-contents-admin-web
+RUN chmod 644 /etc/cron.d/cron-toposoid-contents-admin-web \
+&& sed -i -e '/pam_loginuid.so/s/^/#/' /etc/pam.d/crond
+
 COPY ./docker-entrypoint.sh /app/
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
