@@ -1,0 +1,1 @@
+* * * * * root find /app/toposoid-contents-admin-web/contents/images/ -name '*' -mmin +10 -delete
