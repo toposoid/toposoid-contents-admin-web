@@ -1,1 +1,1 @@
-* * * * * root find /app/toposoid-contents-admin-web/contents/images/ -name '*' -mmin +10 -delete
+* * * * * root find /app/toposoid-contents-admin-web/contents/temporaryUse/ -name '*' -mmin +10 -delete
