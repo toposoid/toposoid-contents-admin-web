@@ -4,6 +4,8 @@ WORKDIR /app
 ARG TARGET_BRANCH
 ENV DEPLOYMENT=local
 
+RUN cp /usr/share/zoneinfo/Asia/Tokyo /etc/localtime
+
 RUN apt-get update && apt-get upgrade -y \
 && apt-get -y install git libgl1-mesa-dev cron \
 && git clone https://github.com/toposoid/toposoid-contents-admin-web.git \
@@ -12,8 +14,7 @@ RUN apt-get update && apt-get upgrade -y \
 && git checkout ${TARGET_BRANCH} \
 && pip install --no-cache-dir --trusted-host pypi.python.org -r requirements.txt
 
-COPY cron-toposoid-contents-admin-web /etc/cron.d/
-RUN chmod 644 /etc/cron.d/cron-toposoid-contents-admin-web \
+RUN echo "* * * * * root find /app/toposoid-contents-admin-web/contents/temporaryUse/* -name '*' -mmin +1 -delete" >> /etc/crontab \
 && sed -i -e '/pam_loginuid.so/s/^/#/' /etc/pam.d/cron
 
 COPY ./docker-entrypoint.sh /app/

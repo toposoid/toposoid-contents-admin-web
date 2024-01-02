@@ -1,1 +1,0 @@
-* * * * * root find /app/toposoid-contents-admin-web/contents/temporaryUse/ -name '*' -mmin +10 -delete
