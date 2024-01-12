@@ -14,6 +14,7 @@
   limitations under the License.
  '''
 from fastapi.testclient import TestClient
+from fastapi import status
 from api import app
 from model import StatusInfo, RegistContentResult
 import numpy as np
@@ -36,8 +37,10 @@ class TestToposoidContentsAdminWeb(object):
 
     @classmethod
     def teardown_class(cls):
-        os.remove('contents/images/' + cls.id1 + ".jpeg")
-        os.remove('contents/images/' + cls.id2 + ".jpeg")
+        if os.path.isfile('contents/images/' + cls.id1 + ".jpeg"):
+            os.remove('contents/images/' + cls.id1 + ".jpeg")
+        if os.path.isfile('contents/images/' + cls.id2 + ".jpeg"):    
+            os.remove('contents/images/' + cls.id2 + ".jpeg")
         
     def test_registImage(self): 
         
@@ -140,3 +143,8 @@ class TestToposoidContentsAdminWeb(object):
         assert registContentResult.statusInfo.status == "OK"
         assert registContentResult.knowledgeForImage.imageReference.reference.url == os.environ["TOPOSOID_CONTENTS_URL"] + "temporaryUse/" + self.id2 + ".jpeg"
         assert os.path.exists('contents/temporaryUse/' + self.id2 + ".jpeg")
+
+    def test_uploadFile(self):
+        with open("IMG_TEST.png", "rb") as f:
+            response = self.client.post("/uploadFile", files={"uploadfile": ("IMG_TEST.png", f, "image/png")})
+        assert response.status_code == status.HTTP_200_OK

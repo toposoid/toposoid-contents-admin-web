@@ -14,7 +14,7 @@
   limitations under the License.
  '''
 
-from fastapi import FastAPI
+from fastapi import FastAPI, File, UploadFile, Form
 from model import KnowledgeForImage, StatusInfo, RegistContentResult
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
@@ -29,6 +29,8 @@ import traceback
 from ImageAdmin import ImageAdmin
 from middleware import ErrorHandlingMiddleware
 from fastapi.staticfiles import StaticFiles
+import shutil
+import uuid
 
 app = FastAPI(
     title="toposoid-contents-admin-web",
@@ -65,3 +67,14 @@ def uploadTemporaryImage(knowledgeForImage:KnowledgeForImage):
     except Exception as e:
         LOG.error(traceback.format_exc())
         return JSONResponse(content=jsonable_encoder(RegistContentResult(knowledgeForImage=knowledgeForImage, statusInfo=StatusInfo(status="ERROR", message=traceback.format_exc()))))
+
+@app.post("/uploadFile")
+async def createUploadFile(uploadfile: UploadFile = File(...)):    
+    path = f'contents/temporaryUse/{uuid.uuid1()}-{uploadfile.filename}'
+    url = os.environ["TOPOSOID_CONTENTS_URL"] + path
+    with open(path, 'w+b') as buffer:
+        shutil.copyfileobj(uploadfile.file, buffer)
+    return {
+        'url': url,        
+    }
+    
