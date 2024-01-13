@@ -70,7 +70,7 @@ def uploadTemporaryImage(knowledgeForImage:KnowledgeForImage):
 
 @app.post("/uploadFile")
 async def createUploadFile(uploadfile: UploadFile = File(...)):   
-    id = uuid.uuid1() 
+    id = str(uuid.uuid1())
     path = f'contents/temporaryUse/{id}-{uploadfile.filename}'
     url = os.environ["TOPOSOID_CONTENTS_URL"] + "temporaryUse/" + id + uploadfile.filename
     with open(path, 'w+b') as buffer:
