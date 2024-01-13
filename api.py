@@ -71,7 +71,7 @@ def uploadTemporaryImage(knowledgeForImage:KnowledgeForImage):
 @app.post("/uploadFile")
 async def createUploadFile(uploadfile: UploadFile = File(...)):    
     path = f'contents/temporaryUse/{uuid.uuid1()}-{uploadfile.filename}'
-    url = os.environ["TOPOSOID_CONTENTS_URL"] + path
+    url = os.environ["TOPOSOID_CONTENTS_URL"] + "temporaryUse/{uuid.uuid1()}_{uploadfile.filename}"
     with open(path, 'w+b') as buffer:
         shutil.copyfileobj(uploadfile.file, buffer)
     return {

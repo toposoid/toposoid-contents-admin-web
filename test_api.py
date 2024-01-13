@@ -148,3 +148,4 @@ class TestToposoidContentsAdminWeb(object):
         with open("IMG_TEST.png", "rb") as f:
             response = self.client.post("/uploadFile", files={"uploadfile": ("IMG_TEST.png", f, "image/png")})
         assert response.status_code == status.HTTP_200_OK
+        print(response.json())
