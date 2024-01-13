@@ -72,7 +72,7 @@ def uploadTemporaryImage(knowledgeForImage:KnowledgeForImage):
 async def createUploadFile(uploadfile: UploadFile = File(...)):   
     id = str(uuid.uuid1())
     path = f'contents/temporaryUse/{id}-{uploadfile.filename}'
-    url = os.environ["TOPOSOID_CONTENTS_URL"] + "temporaryUse/" + id + uploadfile.filename
+    url = os.environ["TOPOSOID_CONTENTS_URL"] + "temporaryUse/" + id + "-" + uploadfile.filename
     with open(path, 'w+b') as buffer:
         shutil.copyfileobj(uploadfile.file, buffer)
     return {
