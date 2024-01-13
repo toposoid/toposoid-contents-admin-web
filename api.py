@@ -69,9 +69,10 @@ def uploadTemporaryImage(knowledgeForImage:KnowledgeForImage):
         return JSONResponse(content=jsonable_encoder(RegistContentResult(knowledgeForImage=knowledgeForImage, statusInfo=StatusInfo(status="ERROR", message=traceback.format_exc()))))
 
 @app.post("/uploadFile")
-async def createUploadFile(uploadfile: UploadFile = File(...)):    
-    path = f'contents/temporaryUse/{uuid.uuid1()}-{uploadfile.filename}'
-    url = os.environ["TOPOSOID_CONTENTS_URL"] + "temporaryUse/{uuid.uuid1()}_{uploadfile.filename}"
+async def createUploadFile(uploadfile: UploadFile = File(...)):   
+    id = uuid.uuid1() 
+    path = f'contents/temporaryUse/{id}-{uploadfile.filename}'
+    url = os.environ["TOPOSOID_CONTENTS_URL"] + "temporaryUse/" + id + uploadfile.filename
     with open(path, 'w+b') as buffer:
         shutil.copyfileobj(uploadfile.file, buffer)
     return {
