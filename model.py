@@ -36,7 +36,7 @@ class ImageReference(BaseModel):
     x:int
     y:int
     height:int
-    weight:int
+    width:int
 
 class KnowledgeForImage(BaseModel):
     id:str

@@ -58,7 +58,7 @@ class TestToposoidContentsAdminWeb(object):
                                 },
                                 "x": 27,
                                 "y": 41,
-                                "weight": 287,
+                                "width": 287,
                                 "height": 435}
                             })
         assert response.status_code == 200
@@ -85,7 +85,7 @@ class TestToposoidContentsAdminWeb(object):
                                 },
                                 "x": 0,
                                 "y": 0,
-                                "weight": 0,
+                                "width": 0,
                                 "height": 0}
                             })
         assert response.status_code == 200
@@ -110,7 +110,7 @@ class TestToposoidContentsAdminWeb(object):
                                 },
                                 "x": 27,
                                 "y": 41,
-                                "weight": 287,
+                                "width": 287,
                                 "height": 435}
                             })
         assert response.status_code == 200
@@ -135,7 +135,7 @@ class TestToposoidContentsAdminWeb(object):
                                 },
                                 "x": 0,
                                 "y": 0,
-                                "weight": 0,
+                                "width": 0,
                                 "height": 0}
                             })
         assert response.status_code == 200

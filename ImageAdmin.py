@@ -32,7 +32,7 @@ class ImageAdmin():
             #加工
             x = knowledgeForImage.imageReference.x
             y = knowledgeForImage.imageReference.y
-            w = knowledgeForImage.imageReference.weight
+            w = knowledgeForImage.imageReference.width
             h = knowledgeForImage.imageReference.height
             
             if isTemporaryUse:
