@@ -5,6 +5,7 @@ This microservice is responsible for managing content. Specifically, this includ
 
 [![Test And Build](https://github.com/toposoid/toposoid-contents-admin-web/actions/workflows/action.yml/badge.svg)](https://github.com/toposoid/toposoid-contents-admin-web/actions/workflows/action.yml)
 
+<img width="1154"  src="https://github.com/toposoid/toposoid-contents-admin-web/assets/82787843/eb464f57-2129-4e39-abbc-de0f4837aad9">
 
 ## Dependency in toposoid Project
 
@@ -21,13 +22,25 @@ docker-compose up
 ```
 The first startup takes a long time until docker pull finishes.
 ## Usage
+* This API reads the image of the URL, processes the image, and returns the URL managed by Toposoid.
 ```bash
-#For unspecified queries
-curl -X POST -H "Content-Type: application/json" -d '{ "query":"MATCH (n:ClaimNode)-[e:ClaimEdge]-(m:ClaimNode) return n,e,m", "target": "" }' http://localhost:9005/getQueryResult
-
-#If you want to convert the result to a specific Toposoid object
-curl -X POST -H "Content-Type: application/json" -d '{ "query":"MATCH (n:ClaimNode)-[e:ClaimEdge]-(m:ClaimNode) return n,e,m", "target": "" }' http://localhost:9005/getQueryFormattedResult
+curl -X POST -H "Content-Type: application/json" -d '{
+    "id": "d64f48da-0efb-4bf8-b1d4-75a5fa7cec72",
+    "imageReference":{
+    "reference": {
+        "url": "",
+        "surface": "猫が",
+        "surfaceIndex": "0",
+        "isWholeSentence": false,
+        "originalUrlOrReference": "http://images.cocodataset.org/val2017/000000039769.jpg"
+    },
+    "x": 27,
+    "y": 41,
+    "width": 287,
+    "height": 435}
+}' http://localhost:9012/registImage
 ```
+* if you want to upload temporary content, please use uploadTemporaryImage Action.
 
 ## Note
 * This microservice uses 9012 as the default port.
