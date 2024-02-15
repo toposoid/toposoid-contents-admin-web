@@ -1,7 +1,7 @@
 version: '3.4'
 services:
   toposoid-contents-admin-web:
-    image: toposoid/toposoid-contents-admin-web:0.5-SNAPSHOT
+    image: toposoid/toposoid-contents-admin-web:0.5
     environment:
       - TOPOSOID_CONTENTS_URL=http://toposoid-contents-admin-web:9012/contents/
     ports:
