@@ -1,0 +1,10 @@
+version: '3'
+services:
+  toposoid-contents-admin-web:
+    image: toposoid-contents-admin-web:0.5
+    tty: true
+    environment:
+      - TOPOSOID_CONTENTS_URL=http://toposoid-contents-admin-web:9012/
+    ports:
+      - 9012:9012
+  
