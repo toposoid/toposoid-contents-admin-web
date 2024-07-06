@@ -16,12 +16,13 @@
 from fastapi.testclient import TestClient
 from fastapi import status
 from api import app
-from model import StatusInfo, RegistContentResult
+from model import StatusInfo, RegistContentResult, TransversalState
 import numpy as np
 from time import sleep
 import pytest
 import uuid
 import os
+from fastapi.encoders import jsonable_encoder
 
 class TestToposoidContentsAdminWeb(object):
 
@@ -29,6 +30,7 @@ class TestToposoidContentsAdminWeb(object):
     vector = list(np.random.rand(768))
     id1 = ""
     id2 = ""
+    transversalState = str(jsonable_encoder(TransversalState(username="guest")))
 
     @classmethod
     def setup_class(cls):    
@@ -45,7 +47,7 @@ class TestToposoidContentsAdminWeb(object):
     def test_registImage(self): 
         
         response = self.client.post("/registImage",
-                            headers={"Content-Type": "application/json"},
+                            headers={"Content-Type": "application/json", "X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},
                             json={
                                 "id": self.id1,
                                 "imageReference":{
@@ -68,11 +70,10 @@ class TestToposoidContentsAdminWeb(object):
         assert os.path.exists('contents/images/' + self.id1 + ".jpeg")
 
 
-
     def test_registImage2(self): 
         
         response = self.client.post("/registImage",
-                            headers={"Content-Type": "application/json"},
+                            headers={"Content-Type": "application/json", "X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},
                             json={
                                 "id": self.id2,
                                 "imageReference":{
@@ -97,7 +98,7 @@ class TestToposoidContentsAdminWeb(object):
     def test_uploadTemporaryImage(self): 
         
         response = self.client.post("/uploadTemporaryImage",
-                            headers={"Content-Type": "application/json"},
+                            headers={"Content-Type": "application/json", "X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},
                             json={
                                 "id": self.id1,
                                 "imageReference":{
@@ -122,7 +123,7 @@ class TestToposoidContentsAdminWeb(object):
     def test_uploadTemporaryImage2(self): 
         
         response = self.client.post("/uploadTemporaryImage",
-                            headers={"Content-Type": "application/json"},
+                            headers={"Content-Type": "application/json", "X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},
                             json={
                                 "id": self.id2,
                                 "imageReference":{
@@ -146,6 +147,7 @@ class TestToposoidContentsAdminWeb(object):
 
     def test_uploadFile(self):
         with open("IMG_TEST.png", "rb") as f:
-            response = self.client.post("/uploadFile", files={"uploadfile": ("IMG_TEST.png", f, "image/png")})
+            response = self.client.post("/uploadFile", headers={"X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},files={"uploadfile": ("IMG_TEST.png", f, "image/png")})
         assert response.status_code == status.HTTP_200_OK
         print(response.json())
+    
