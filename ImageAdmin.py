@@ -9,7 +9,7 @@ class ImageAdmin():
     def registImage(self, knowledgeForImage:KnowledgeForImage, isTemporaryUse = False):
 
         # 画像を取得
-        response = requests.get(knowledgeForImage.imageReference.reference.originalUrlOrReference)
+        response = requests.get(knowledgeForImage.imageReference.reference.originalUrlOrReference, stream=True,verify=False)
         
         # 画像を一時的にファイルに保存
         with open('tmp/' + knowledgeForImage.id, 'wb') as f:

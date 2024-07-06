@@ -170,3 +170,4 @@ tmp/*
 !tmp/.gitkeep
 contents/temporaryUse/*
 !contents/temporaryUse/.gitkeep
+docker-compose-local.yml

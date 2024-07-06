@@ -47,4 +47,5 @@ class RegistContentResult(BaseModel):
     #knowledgeForOther:knowledgeForOther, //The Other is a feature */
     statusInfo:StatusInfo
 
-
+class TransversalState(BaseModel):
+    username:str
