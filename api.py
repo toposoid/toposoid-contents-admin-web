@@ -53,8 +53,8 @@ app.mount("/contents", StaticFiles(directory="contents"), name="contents")
 @app.post("/registImage",
           summary='register image files')
 def registImage(knowledgeForImage:KnowledgeForImage, X_TOPOSOID_TRANSVERSAL_STATE: Optional[str] = Header(None, convert_underscores=False)):
-    try:   
-        transversalState = TransversalState.parse_raw(X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
+    transversalState = TransversalState.parse_raw(X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
+    try:           
         updatedKnowledgeForImage = imageAdmin.registImage(knowledgeForImage, False)
         response = JSONResponse(content=jsonable_encoder(RegistContentResult(knowledgeForImage=updatedKnowledgeForImage, statusInfo=StatusInfo(status="OK", message="")) ))
         LOG.info(formatMessageForLogger("Image upload completed.[url:" + knowledgeForImage.imageReference.reference.url +"]", transversalState.username),extra={"tab":"\t"})
@@ -66,8 +66,8 @@ def registImage(knowledgeForImage:KnowledgeForImage, X_TOPOSOID_TRANSVERSAL_STAT
 @app.post("/uploadTemporaryImage",
           summary='upload image files as temporary')
 def uploadTemporaryImage(knowledgeForImage:KnowledgeForImage, X_TOPOSOID_TRANSVERSAL_STATE: Optional[str] = Header(None, convert_underscores=False)):
-    try:    
-        transversalState = TransversalState.parse_raw(X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
+    transversalState = TransversalState.parse_raw(X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
+    try:            
         updatedKnowledgeForImage = imageAdmin.registImage(knowledgeForImage, True)
         response = JSONResponse(content=jsonable_encoder(RegistContentResult(knowledgeForImage=updatedKnowledgeForImage, statusInfo=StatusInfo(status="OK", message=""))))
         LOG.info(formatMessageForLogger("Image upload completed.[url:" + updatedKnowledgeForImage.imageReference.reference.url +"]", transversalState.username),extra={"tab":"\t"})
