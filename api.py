@@ -38,7 +38,7 @@ from utils import formatMessageForLogger
 
 app = FastAPI(
     title="toposoid-contents-admin-web",
-    version="0.5-SNAPSHOT"
+    version="0.6-SNAPSHOT"
 )
 app.add_middleware(ErrorHandlingMiddleware)
 imageAdmin = ImageAdmin()
