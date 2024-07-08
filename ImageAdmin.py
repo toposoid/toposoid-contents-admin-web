@@ -4,13 +4,20 @@ from model import KnowledgeForImage
 import os
 import imghdr
 import shutil
+import time
 
 class ImageAdmin():
     def registImage(self, knowledgeForImage:KnowledgeForImage, isTemporaryUse = False):
-
-        print(knowledgeForImage.imageReference.reference.originalUrlOrReference)
+        
+        response = None
         # 画像を取得
-        response = requests.get(knowledgeForImage.imageReference.reference.originalUrlOrReference, stream=True,verify=False, timeout=(5.0, 10.0))
+        for attempt in range(3):
+            try:
+                response = requests.get(knowledgeForImage.imageReference.reference.originalUrlOrReference, stream=True,verify=False, timeout=(5.0, 10.0))
+                break
+            except requests.exceptions.ChunkedEncodingError:
+                time.sleep(1)
+        
         
         # 画像を一時的にファイルに保存
         with open('tmp/' + knowledgeForImage.id, 'wb') as f:
