@@ -10,7 +10,7 @@ class ImageAdmin():
 
         print(knowledgeForImage.imageReference.reference.originalUrlOrReference)
         # 画像を取得
-        response = requests.get(knowledgeForImage.imageReference.reference.originalUrlOrReference, timeout=(5.0, 10.0))
+        response = requests.get(knowledgeForImage.imageReference.reference.originalUrlOrReference, stream=True,verify=False, timeout=(5.0, 10.0))
         
         # 画像を一時的にファイルに保存
         with open('tmp/' + knowledgeForImage.id, 'wb') as f:
