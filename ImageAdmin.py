@@ -13,7 +13,7 @@ class ImageAdmin():
         # 画像を取得
         for attempt in range(3):
             try:
-                response = requests.get(knowledgeForImage.imageReference.reference.originalUrlOrReference, stream=True,verify=False, timeout=(5.0, 10.0))
+                response = requests.get(knowledgeForImage.imageReference.reference.originalUrlOrReference, stream=True,verify=False, timeout=(10.0, 10.0))
                 break
             except requests.exceptions.ChunkedEncodingError:
                 time.sleep(1)
