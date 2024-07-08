@@ -22,8 +22,10 @@ from starlette.middleware.cors import CORSMiddleware
 from typing import Optional
 
 import os
+import yaml
 from logging import config
-config.fileConfig('logging.conf')
+#config.fileConfig('logging.conf')
+config.dictConfig(yaml.load(open("logging.yml", encoding="utf-8").read(), Loader=yaml.SafeLoader))
 import logging
 LOG = logging.getLogger(__name__)
 import traceback
@@ -57,10 +59,10 @@ def registImage(knowledgeForImage:KnowledgeForImage, X_TOPOSOID_TRANSVERSAL_STAT
     try:           
         updatedKnowledgeForImage = imageAdmin.registImage(knowledgeForImage, False)
         response = JSONResponse(content=jsonable_encoder(RegistContentResult(knowledgeForImage=updatedKnowledgeForImage, statusInfo=StatusInfo(status="OK", message="")) ))
-        LOG.info(formatMessageForLogger("Image upload completed.[url:" + knowledgeForImage.imageReference.reference.url +"]", transversalState.username),extra={"tab":"\t"})
+        LOG.info(formatMessageForLogger("Image upload completed.[url:" + knowledgeForImage.imageReference.reference.url +"]", transversalState.username))
         return response
     except Exception as e:
-        LOG.error(formatMessageForLogger(traceback.format_exc(), transversalState.username),extra={"tab":"\t"})
+        LOG.error(formatMessageForLogger(traceback.format_exc(), transversalState.username))
         return JSONResponse(content=jsonable_encoder(RegistContentResult(knowledgeForImage=knowledgeForImage, statusInfo=StatusInfo(status="ERROR", message=traceback.format_exc()))))
 
 @app.post("/uploadTemporaryImage",
@@ -70,10 +72,10 @@ def uploadTemporaryImage(knowledgeForImage:KnowledgeForImage, X_TOPOSOID_TRANSVE
     try:            
         updatedKnowledgeForImage = imageAdmin.registImage(knowledgeForImage, True)
         response = JSONResponse(content=jsonable_encoder(RegistContentResult(knowledgeForImage=updatedKnowledgeForImage, statusInfo=StatusInfo(status="OK", message=""))))
-        LOG.info(formatMessageForLogger("Image upload completed.[url:" + updatedKnowledgeForImage.imageReference.reference.url +"]", transversalState.username),extra={"tab":"\t"})
+        LOG.info(formatMessageForLogger("Image upload completed.[url:" + updatedKnowledgeForImage.imageReference.reference.url +"]", transversalState.username))
         return response
     except Exception as e:
-        LOG.error(formatMessageForLogger(traceback.format_exc(), transversalState.username),extra={"tab":"\t"})
+        LOG.error(formatMessageForLogger(traceback.format_exc(), transversalState.username))
         return JSONResponse(content=jsonable_encoder(RegistContentResult(knowledgeForImage=knowledgeForImage, statusInfo=StatusInfo(status="ERROR", message=traceback.format_exc()))))
 
 @app.post("/uploadFile")
@@ -84,7 +86,7 @@ async def createUploadFile(uploadfile: UploadFile = File(...), X_TOPOSOID_TRANSV
     url = os.environ["TOPOSOID_CONTENTS_URL"] + "temporaryUse/" + id + "-" + uploadfile.filename
     with open(path, 'w+b') as buffer:
         shutil.copyfileobj(uploadfile.file, buffer)
-    LOG.info(formatMessageForLogger("Image upload completed.[url:" + url +"]", transversalState.username),extra={"tab":"\t"})
+    LOG.info(formatMessageForLogger("Image upload completed.[url:" + url +"]", transversalState.username))
     return {
         'url': url,        
     }
