@@ -8,20 +8,30 @@ import time
 
 class ImageAdmin():
     def registImage(self, knowledgeForImage:KnowledgeForImage, isTemporaryUse = False):
-        
-        response = None
+                
         # 画像を取得
         for attempt in range(3):
             try:
-                response = requests.get(knowledgeForImage.imageReference.reference.originalUrlOrReference, stream=True,verify=False, timeout=(10.0, 10.0))
+                header = {
+                    "Accept": "*/*",
+                    "Accept-Encoding": "gzip, deflate",
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36"
+                }
+                with requests.get(knowledgeForImage.imageReference.reference.originalUrlOrReference, stream=True,verify=False, headers=header, timeout=(10.0, 10.0)) as res:
+                    # 画像を一時的にファイルに保存
+                    with open('tmp/' + knowledgeForImage.id, "wb") as f:
+                        for chunk in res.iter_content(chunk_size=1024):
+                            if chunk:
+                                f.write(chunk)
+
                 break
             except requests.exceptions.ChunkedEncodingError:
                 time.sleep(1)
         
         
-        # 画像を一時的にファイルに保存
-        with open('tmp/' + knowledgeForImage.id, 'wb') as f:
-            f.write(response.content)
+        
+        #with open('tmp/' + knowledgeForImage.id, 'wb') as f:
+        #    f.write(response.content)
         
         # 画像フォーマットを取得
         fmt = imghdr.what('tmp/' + knowledgeForImage.id)
