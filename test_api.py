@@ -30,7 +30,7 @@ class TestToposoidContentsAdminWeb(object):
     vector = list(np.random.rand(768))
     id1 = ""
     id2 = ""
-    transversalState = str(jsonable_encoder(TransversalState(username="guest")))
+    transversalState = str(jsonable_encoder(TransversalState(userId="test-user", username="guest", roleId=0, csrfToken = "")))
 
     @classmethod
     def setup_class(cls):    
