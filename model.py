@@ -48,4 +48,7 @@ class RegistContentResult(BaseModel):
     statusInfo:StatusInfo
 
 class TransversalState(BaseModel):
-    username:str
+    userId: str
+    roleId: int
+    username: str
+    csrfToken: str
