@@ -66,8 +66,9 @@ class TestToposoidContentsAdminWeb(object):
         assert response.status_code == 200
         registContentResult = RegistContentResult.parse_obj(response.json())
         assert registContentResult.statusInfo.status == "OK"
-        assert registContentResult.knowledgeForImage.imageReference.reference.url == os.environ["TOPOSOID_CONTENTS_URL"] + "images/" + self.id1 + ".jpeg"
-        assert os.path.exists('contents/images/' + self.id1 + ".jpeg")
+        assert registContentResult.knowledgeForImage.imageReference.reference.url == os.environ["TOPOSOID_CONTENTS_URL"] + "images/" + self.id1 + ".jpg"
+        assert os.path.exists('contents/images/' + self.id1 + "-org.jpeg")
+        assert os.path.exists('contents/images/' + self.id1 + ".jpg")
 
 
     def test_registImage2(self): 
@@ -92,8 +93,9 @@ class TestToposoidContentsAdminWeb(object):
         assert response.status_code == 200
         registContentResult = RegistContentResult.parse_obj(response.json())
         assert registContentResult.statusInfo.status == "OK"
-        assert registContentResult.knowledgeForImage.imageReference.reference.url == os.environ["TOPOSOID_CONTENTS_URL"] + "images/" + self.id2 + ".jpeg"
-        assert os.path.exists('contents/images/' + self.id2 + ".jpeg")
+        assert registContentResult.knowledgeForImage.imageReference.reference.url == os.environ["TOPOSOID_CONTENTS_URL"] + "images/" + self.id2 + ".jpg"
+        assert os.path.exists('contents/images/' + self.id2 + "-org.jpeg")
+        assert os.path.exists('contents/images/' + self.id2 + ".jpg")
 
     def test_uploadTemporaryImage(self): 
         
@@ -117,8 +119,9 @@ class TestToposoidContentsAdminWeb(object):
         assert response.status_code == 200
         registContentResult = RegistContentResult.parse_obj(response.json())
         assert registContentResult.statusInfo.status == "OK"
-        assert registContentResult.knowledgeForImage.imageReference.reference.url == os.environ["TOPOSOID_CONTENTS_URL"] + "temporaryUse/" + self.id1 + ".jpeg"
-        assert os.path.exists('contents/temporaryUse/' + self.id1 + ".jpeg")
+        assert registContentResult.knowledgeForImage.imageReference.reference.url == os.environ["TOPOSOID_CONTENTS_URL"] + "temporaryUse/" + self.id1 + ".jpg"
+        assert os.path.exists('contents/temporaryUse/' + self.id1 + "-org.jpeg")
+        assert os.path.exists('contents/temporaryUse/' + self.id1 + ".jpg")
 
     def test_uploadTemporaryImage2(self): 
         
@@ -142,12 +145,13 @@ class TestToposoidContentsAdminWeb(object):
         assert response.status_code == 200
         registContentResult = RegistContentResult.parse_obj(response.json())
         assert registContentResult.statusInfo.status == "OK"
-        assert registContentResult.knowledgeForImage.imageReference.reference.url == os.environ["TOPOSOID_CONTENTS_URL"] + "temporaryUse/" + self.id2 + ".jpeg"
-        assert os.path.exists('contents/temporaryUse/' + self.id2 + ".jpeg")
+        assert registContentResult.knowledgeForImage.imageReference.reference.url == os.environ["TOPOSOID_CONTENTS_URL"] + "temporaryUse/" + self.id2 + ".jpg"
+        assert os.path.exists('contents/temporaryUse/' + self.id2 + "-org.jpeg")
+        assert os.path.exists('contents/temporaryUse/' + self.id2 + ".jpg")
 
-    def test_uploadFile(self):
+    def test_uploadImageFile(self):
         with open("IMG_TEST.png", "rb") as f:
-            response = self.client.post("/uploadFile", headers={"X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},files={"uploadfile": ("IMG_TEST.png", f, "image/png")})
+            response = self.client.post("/uploadImageFile", headers={"X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},files={"uploadfile": ("IMG_TEST.png", f, "image/png")})
         assert response.status_code == status.HTTP_200_OK
         print(response.json())
     

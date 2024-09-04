@@ -39,9 +39,15 @@ class ImageAdmin():
         #保存
         if knowledgeForImage.imageReference.reference.isWholeSentence:
             if isTemporaryUse:
-                shutil.move('tmp/' + knowledgeForImage.id, 'contents/temporaryUse/' + knowledgeForImage.id + "." + fmt)
+                shutil.move('tmp/' + knowledgeForImage.id, 'contents/temporaryUse/' + knowledgeForImage.id + "-org." + fmt)
+                image = cv2.imread('contents/temporaryUse/' + knowledgeForImage.id + "-org." + fmt)
+                #JPEGに変換
+                cv2.imwrite('contents/temporaryUse/' + knowledgeForImage.id + ".jpg" , image, [int(cv2.IMWRITE_JPEG_QUALITY), 100]) 
             else:
-                shutil.move('tmp/' + knowledgeForImage.id, 'contents/images/' + knowledgeForImage.id + "." + fmt)
+                shutil.move('tmp/' + knowledgeForImage.id, 'contents/images/' + knowledgeForImage.id + "-org." + fmt)
+                image = cv2.imread('contents/images/' + knowledgeForImage.id + "-org." + fmt)
+                #JPEGに変換
+                cv2.imwrite('contents/images/' + knowledgeForImage.id + ".jpg" , image, [int(cv2.IMWRITE_JPEG_QUALITY), 100]) 
         else:
             # テンポラリファイル名変更
             os.rename('tmp/' + knowledgeForImage.id, 'tmp/' + knowledgeForImage.id + "." + fmt)
@@ -54,15 +60,34 @@ class ImageAdmin():
             h = knowledgeForImage.imageReference.height
             
             if isTemporaryUse:
-                cv2.imwrite('contents/temporaryUse/' + knowledgeForImage.id + "." + fmt, image[y:y+h, x:x+w])
+                #元画像
+                cv2.imwrite('contents/temporaryUse/' + knowledgeForImage.id + "-org." + fmt, image[y:y+h, x:x+w])
+                #JPEGに変換
+                cv2.imwrite('contents/temporaryUse/' + knowledgeForImage.id + ".jpg" , image[y:y+h, x:x+w], [int(cv2.IMWRITE_JPEG_QUALITY), 100])
             else:
-                cv2.imwrite('contents/images/' + knowledgeForImage.id + "." + fmt, image[y:y+h, x:x+w])
+                #元画像
+                cv2.imwrite('contents/images/' + knowledgeForImage.id + "-org." + fmt, image[y:y+h, x:x+w])
+                #JPEGに変換
+                cv2.imwrite('contents/images/' + knowledgeForImage.id + ".jpg", image[y:y+h, x:x+w], [int(cv2.IMWRITE_JPEG_QUALITY), 100])
             #削除
             os.remove('tmp/' + knowledgeForImage.id + "." + fmt)
 
+
+
         if isTemporaryUse:
-            knowledgeForImage.imageReference.reference.url = os.environ["TOPOSOID_CONTENTS_URL"] + "temporaryUse/" + knowledgeForImage.id + "." + fmt
+            knowledgeForImage.imageReference.reference.url = os.environ["TOPOSOID_CONTENTS_URL"] + "temporaryUse/" + knowledgeForImage.id + ".jpg"
         else:
-            knowledgeForImage.imageReference.reference.url = os.environ["TOPOSOID_CONTENTS_URL"] + "images/" + knowledgeForImage.id + "." + fmt
+            knowledgeForImage.imageReference.reference.url = os.environ["TOPOSOID_CONTENTS_URL"] + "images/" + knowledgeForImage.id + ".jpg"
 
         return knowledgeForImage
+
+    def convertJpeg(self, filename, id):
+
+        # 画像読み込み        
+        image = cv2.imread(filename)
+        jpegFilename = 'contents/temporaryUse/' + id + ".jpg"
+        #JPEGに変換
+        cv2.imwrite(jpegFilename, image, [int(cv2.IMWRITE_JPEG_QUALITY), 100])
+        #削除
+        os.remove(filename)
+        return os.environ["TOPOSOID_CONTENTS_URL"] + "temporaryUse/" + id + ".jpg"
