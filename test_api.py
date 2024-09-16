@@ -16,7 +16,7 @@
 from fastapi.testclient import TestClient
 from fastapi import status
 from api import app
-from model import StatusInfo, RegistContentResult, TransversalState
+from model import StatusInfo, RegistContentResult, TransversalState, Document
 import numpy as np
 from time import sleep
 import pytest
@@ -153,5 +153,15 @@ class TestToposoidContentsAdminWeb(object):
         with open("IMG_TEST.png", "rb") as f:
             response = self.client.post("/uploadImageFile", headers={"X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},files={"uploadfile": ("IMG_TEST.png", f, "image/png")})
         assert response.status_code == status.HTTP_200_OK
+        print(response.json())
+    
+    def test_uploadDocumentFile(self):
+        with open("DOCUMENT_TEST.txt", "rb") as f:
+            response = self.client.post("/uploadDocumentFile", headers={"X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},files={"uploadfile": ("DOCUMENT_TEST.txt", f, "text/plain")})
+        assert response.status_code == status.HTTP_200_OK
+        document = Document.parse_obj(response.json())
+        assert document.filename == "DOCUMENT_TEST.txt"
+        assert os.path.exists('contents/documents/' + document.documentId + ".txt" )
+        assert os.path.exists('contents/documents/' + document.documentId + "-" + document.filename )
         print(response.json())
     

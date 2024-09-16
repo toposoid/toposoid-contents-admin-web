@@ -15,7 +15,7 @@
  '''
 
 from fastapi import FastAPI, File, UploadFile, Header
-from model import KnowledgeForImage, StatusInfo, RegistContentResult, TransversalState
+from model import KnowledgeForImage, StatusInfo, RegistContentResult, TransversalState, Document
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from starlette.middleware.cors import CORSMiddleware
@@ -86,9 +86,39 @@ async def createUploadImageFile(uploadfile: UploadFile = File(...), X_TOPOSOID_T
     #url = os.environ["TOPOSOID_CONTENTS_URL"] + "temporaryUse/" + id + "-" + uploadfile.filename
     with open(path, 'w+b') as buffer:
         shutil.copyfileobj(uploadfile.file, buffer)    
+    #TODO:check File
     url = imageAdmin.convertJpeg(path, id)
     LOG.info(formatMessageForLogger("Image upload completed.[url:" + url +"]", transversalState.userId))
     return {
         'url': url,        
     }
+
+@app.post("/uploadDocumentFile")
+async def createUploadDocumentFile(uploadfile: UploadFile = File(...), X_TOPOSOID_TRANSVERSAL_STATE: Optional[str] = Header(None, convert_underscores=False)):   
+    transversalState = TransversalState.parse_raw(X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
+    id = str(uuid.uuid1())
+    elements = uploadfile.filename.split(".")
+    ext = ""
+    if len(elements) > 1:
+        ext = "." + elements[-1]
+
+    path = f'tmp/{id}-{uploadfile.filename}'    
+    with open(path, 'w+b') as buffer:
+        shutil.copyfileobj(uploadfile.file, buffer)    
+    size = os.path.getsize(path)
+    #TODO:check File
+    shutil.move(path, "contents/documents/%s-%s" % (id, uploadfile.filename))    
+    shutil.copy("contents/documents/%s-%s" % (id, uploadfile.filename),"contents/documents/%s%s" % (id, ext) )
+    url = os.environ["TOPOSOID_CONTENTS_URL"] + "documents/" + id + ext
+    
+    LOG.info(formatMessageForLogger("Image upload completed.[url:" + url +"]", transversalState.userId))
+    return JSONResponse(content=jsonable_encoder(Document(documentId=id, filename=uploadfile.filename, url=url, size=size)))
+    '''
+    return {
+        'url': url,
+        'filename': uploadfile.filename,
+        'documentId': id        
+    }
+    '''
+
     

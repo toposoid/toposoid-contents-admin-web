@@ -28,7 +28,7 @@ class ImageAdmin():
             except requests.exceptions.ChunkedEncodingError:
                 time.sleep(1)
         
-        
+        #TODO:check File
         
         #with open('tmp/' + knowledgeForImage.id, 'wb') as f:
         #    f.write(response.content)
