@@ -52,3 +52,10 @@ class TransversalState(BaseModel):
     roleId: int
     username: str
     csrfToken: str
+
+class Document(BaseModel):
+    documentId: str
+    filename: str
+    url: str 
+    size:int
+    
