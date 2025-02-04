@@ -1,4 +1,4 @@
-FROM python:3.9.16
+FROM python:3.10.13
 
 WORKDIR /app
 ARG TARGET_BRANCH
