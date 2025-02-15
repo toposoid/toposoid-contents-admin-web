@@ -7,4 +7,35 @@ services:
       - TOPOSOID_CONTENTS_URL=http://toposoid-contents-admin-web:9012/
     ports:
       - 9012:9012
+  elasticmq:
+    image: softwaremill/elasticmq
+    ports:
+      - 9324:9324
+      - 9325:9325
+    volumes:
+      - ./elasticmq.conf:/opt/elasticmq.conf
+  mysql:
+    image: toposoid/toposoid-rdb:0.6-SNAPSHOT
+    environment:
+      - MYSQL_DATABASE=toposoiddb
+      - MYSQL_USER=toposoid
+      - MYSQL_PASSWORD=p@ssw0rd
+      - MYSQL_ROOT_PASSWORD=p@ssw0rd
+      - TZ=UTC
+    ports:
+      - 3306:3306
+  data-accessor-mysql-web:
+    image: toposoid/data-accessor-mysql-web:0.6-SNAPSHOT
+    environment:
+      - PRIVATE_IP_ADDRESS=192.168.33.10
+      - TOPOSOID_RDB_HOST=mysql
+      - TOPOSOID_RDB_URL=jdbc:mysql://mysql/toposoiddb?serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false
+      - TOPOSOID_JVM_XMS=512m
+      - TOPOSOID_JVM_XMX=1g
+      - TOPOSOID_JVM_XSS=512k
+      - PLAY_HTTP_PORT=9016
+    ports:
+      - 9016:9016
+    depends_on:
+      - mysql
   

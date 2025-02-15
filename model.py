@@ -16,42 +16,12 @@
 
 from pydantic import BaseModel
 from typing import List
-import logging
-LOG = logging.getLogger(__name__)
 
-#Status Information
-class StatusInfo(BaseModel):
-    status:str
-    message:str
-
-class Reference(BaseModel):
-    url:str
-    surface:str
-    surfaceIndex: int
-    isWholeSentence: bool
-    originalUrlOrReference: str
-
-class ImageReference(BaseModel):
-    reference:Reference
-    x:int
-    y:int
-    height:int
-    width:int
-
-class KnowledgeForImage(BaseModel):
-    id:str
-    imageReference:ImageReference
+from ToposoidCommon.model import KnowledgeForImage, StatusInfo
 
 class RegistContentResult(BaseModel):
     knowledgeForImage:KnowledgeForImage
-    #knowledgeForOther:knowledgeForOther, //The Other is a feature */
     statusInfo:StatusInfo
-
-class TransversalState(BaseModel):
-    userId: str
-    roleId: int
-    username: str
-    csrfToken: str
 
 class Document(BaseModel):
     documentId: str

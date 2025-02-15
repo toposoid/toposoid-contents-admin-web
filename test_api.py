@@ -16,13 +16,18 @@
 from fastapi.testclient import TestClient
 from fastapi import status
 from api import app
-from model import StatusInfo, RegistContentResult, TransversalState, Document
+from model import RegistContentResult, Document
+from ToposoidCommon.model import TransversalState, Propositions
 import numpy as np
 from time import sleep
 import pytest
 import uuid
 import os
 from fastapi.encoders import jsonable_encoder
+from RdbUtils import searchDocumentAnalysisResultHistoryByDocumentId
+from ElasiticMQUtils import receiveMessage
+
+TOPOSOID_MQ_DOCUMENT_ANALYSIS_QUENE = os.environ["TOPOSOID_MQ_DOCUMENT_ANALYSIS_QUENE"]
 
 class TestToposoidContentsAdminWeb(object):
 
@@ -56,7 +61,8 @@ class TestToposoidContentsAdminWeb(object):
                                     "surface": "猫が",
                                     "surfaceIndex": "0",
                                     "isWholeSentence": False,
-                                    "originalUrlOrReference": "http://images.cocodataset.org/val2017/000000039769.jpg"
+                                    "originalUrlOrReference": "http://images.cocodataset.org/val2017/000000039769.jpg",
+                                    "metaInformations": []
                                 },
                                 "x": 27,
                                 "y": 41,
@@ -83,7 +89,8 @@ class TestToposoidContentsAdminWeb(object):
                                     "surface": "",
                                     "surfaceIndex": "-1",
                                     "isWholeSentence": True,
-                                    "originalUrlOrReference": "http://images.cocodataset.org/train2017/000000428746.jpg"
+                                    "originalUrlOrReference": "http://images.cocodataset.org/train2017/000000428746.jpg",
+                                    "metaInformations": []
                                 },
                                 "x": 0,
                                 "y": 0,
@@ -109,7 +116,8 @@ class TestToposoidContentsAdminWeb(object):
                                     "surface": "猫が",
                                     "surfaceIndex": "0",
                                     "isWholeSentence": False,
-                                    "originalUrlOrReference": "http://images.cocodataset.org/val2017/000000039769.jpg"
+                                    "originalUrlOrReference": "http://images.cocodataset.org/val2017/000000039769.jpg",
+                                    "metaInformations": []
                                 },
                                 "x": 27,
                                 "y": 41,
@@ -135,7 +143,8 @@ class TestToposoidContentsAdminWeb(object):
                                     "surface": "",
                                     "surfaceIndex": "-1",
                                     "isWholeSentence": True,
-                                    "originalUrlOrReference": "http://images.cocodataset.org/train2017/000000428746.jpg"
+                                    "originalUrlOrReference": "http://images.cocodataset.org/train2017/000000428746.jpg",
+                                    "metaInformations": []
                                 },
                                 "x": 0,
                                 "y": 0,
@@ -156,12 +165,25 @@ class TestToposoidContentsAdminWeb(object):
         print(response.json())
     
     def test_uploadDocumentFile(self):
-        with open("DOCUMENT_TEST.txt", "rb") as f:
-            response = self.client.post("/uploadDocumentFile", headers={"X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},files={"uploadfile": ("DOCUMENT_TEST.txt", f, "text/plain")})
+        with open("DOCUMENT_FOR_TEST.pdf", "rb") as f:
+            response = self.client.post("/uploadDocumentFile", headers={"X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},files={"uploadfile": ("DOCUMENT_FOR_TEST.pdf", f, "application/pdf")})
         assert response.status_code == status.HTTP_200_OK
         document = Document.parse_obj(response.json())
-        assert document.filename == "DOCUMENT_TEST.txt"
-        assert os.path.exists('contents/documents/' + document.documentId + ".txt" )
+        assert document.filename == "DOCUMENT_FOR_TEST.pdf"
+        assert os.path.exists('contents/documents/' + document.documentId + ".pdf" )
         assert os.path.exists('contents/documents/' + document.documentId + "-" + document.filename )
-        print(response.json())
-    
+        documentAnalysisResultHistory = searchDocumentAnalysisResultHistoryByDocumentId(document.documentId, self.transversalState)
+        assert documentAnalysisResultHistory.documentId == document.documentId
+        assert receiveMessage(TOPOSOID_MQ_DOCUMENT_ANALYSIS_QUENE) == document.documentId
+       
+    def test_analyzePdfDocument(self):
+
+        with open("DOCUMENT_FOR_TEST.pdf", "rb") as f:
+            response = self.client.post("/uploadDocumentFile", headers={"X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},files={"uploadfile": ("DOCUMENT_FOR_TEST.pdf", f, "application/pdf")})
+        assert response.status_code == status.HTTP_200_OK
+        requestJson = response.json()
+        requestHeaders = {'Content-type': 'application/json', 'X_TOPOSOID_TRANSVERSAL_STATE': self.transversalState}        
+        response = self.client.post("/analyzePdfDocument" , json=requestJson, headers=requestHeaders) 
+        assert response.status_code == status.HTTP_200_OK
+        propositions = Propositions.parse_obj(response.json())
+        print("check")    
