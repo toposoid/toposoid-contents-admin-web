@@ -15,26 +15,27 @@
  '''
 
 from fastapi import FastAPI, File, UploadFile, Header
-from model import KnowledgeForImage, StatusInfo, RegistContentResult, TransversalState, Document
+from ToposoidCommon.model import KnowledgeForImage, StatusInfo, TransversalState
+from model import RegistContentResult, Document
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from starlette.middleware.cors import CORSMiddleware
 from typing import Optional
 
 import os
-import yaml
-from logging import config
-#config.fileConfig('logging.conf')
-config.dictConfig(yaml.load(open("logging.yml", encoding="utf-8").read(), Loader=yaml.SafeLoader))
-import logging
-LOG = logging.getLogger(__name__)
 import traceback
 from ImageAdmin import ImageAdmin
 from middleware import ErrorHandlingMiddleware
 from fastapi.staticfiles import StaticFiles
 import shutil
 import uuid
-from utils import formatMessageForLogger
+import ToposoidCommon as tc
+from ToposoidPdfAnalyzer import Pdf2Knowledge
+from ElasiticMQUtils import sendMessage
+from RdbUtils import addDocumentAnalysisResultHistory
+
+LOG = tc.LogUtils(__name__)
+TOPOSOID_MQ_DOCUMENT_ANALYSIS_QUENE = os.environ["TOPOSOID_MQ_DOCUMENT_ANALYSIS_QUENE"]
 
 app = FastAPI(
     title="toposoid-contents-admin-web",
@@ -59,10 +60,10 @@ def registImage(knowledgeForImage:KnowledgeForImage, X_TOPOSOID_TRANSVERSAL_STAT
     try:           
         updatedKnowledgeForImage = imageAdmin.registImage(knowledgeForImage, False)
         response = JSONResponse(content=jsonable_encoder(RegistContentResult(knowledgeForImage=updatedKnowledgeForImage, statusInfo=StatusInfo(status="OK", message="")) ))
-        LOG.info(formatMessageForLogger("Image upload completed.[url:" + knowledgeForImage.imageReference.reference.url +"]", transversalState.userId))
+        LOG.info(f"Image upload completed.[url:{knowledgeForImage.imageReference.reference.url}]", transversalState)
         return response
     except Exception as e:
-        LOG.error(formatMessageForLogger(traceback.format_exc(), transversalState.userId))
+        LOG.error(traceback.format_exc(), transversalState)
         return JSONResponse(content=jsonable_encoder(RegistContentResult(knowledgeForImage=knowledgeForImage, statusInfo=StatusInfo(status="ERROR", message=traceback.format_exc()))))
 
 @app.post("/uploadTemporaryImage",
@@ -72,10 +73,10 @@ def uploadTemporaryImage(knowledgeForImage:KnowledgeForImage, X_TOPOSOID_TRANSVE
     try:            
         updatedKnowledgeForImage = imageAdmin.registImage(knowledgeForImage, True)
         response = JSONResponse(content=jsonable_encoder(RegistContentResult(knowledgeForImage=updatedKnowledgeForImage, statusInfo=StatusInfo(status="OK", message=""))))
-        LOG.info(formatMessageForLogger("Image upload completed.[url:" + updatedKnowledgeForImage.imageReference.reference.url +"]", transversalState.userId))
+        LOG.info(f"Image upload completed.[url:{updatedKnowledgeForImage.imageReference.reference.url}]", transversalState)
         return response
     except Exception as e:
-        LOG.error(formatMessageForLogger(traceback.format_exc(), transversalState.userId))
+        LOG.error(traceback.format_exc(), transversalState)
         return JSONResponse(content=jsonable_encoder(RegistContentResult(knowledgeForImage=knowledgeForImage, statusInfo=StatusInfo(status="ERROR", message=traceback.format_exc()))))
 
 @app.post("/uploadImageFile")
@@ -88,7 +89,7 @@ async def createUploadImageFile(uploadfile: UploadFile = File(...), X_TOPOSOID_T
         shutil.copyfileobj(uploadfile.file, buffer)    
     #TODO:check File
     url = imageAdmin.convertJpeg(path, id)
-    LOG.info(formatMessageForLogger("Image upload completed.[url:" + url +"]", transversalState.userId))
+    LOG.info(f"Image upload completed.[url:{url}", transversalState)
     return {
         'url': url,        
     }
@@ -110,15 +111,24 @@ async def createUploadDocumentFile(uploadfile: UploadFile = File(...), X_TOPOSOI
     shutil.move(path, "contents/documents/%s-%s" % (id, uploadfile.filename))    
     shutil.copy("contents/documents/%s-%s" % (id, uploadfile.filename),"contents/documents/%s%s" % (id, ext) )
     url = os.environ["TOPOSOID_CONTENTS_URL"] + "documents/" + id + ext
-    
-    LOG.info(formatMessageForLogger("Image upload completed.[url:" + url +"]", transversalState.userId))
-    return JSONResponse(content=jsonable_encoder(Document(documentId=id, filename=uploadfile.filename, url=url, size=size)))
-    '''
-    return {
-        'url': url,
-        'filename': uploadfile.filename,
-        'documentId': id        
-    }
-    '''
 
-    
+    #Publish to document-analysis-subscriber. Register information in mysql instead of pushing unnecessary things to MQ
+    addDocumentAnalysisResultHistory(1, id, uploadfile.filename, X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
+    sendMessage(TOPOSOID_MQ_DOCUMENT_ANALYSIS_QUENE, id)
+    LOG.info(f"Document upload completed.[url:{url}]", transversalState)
+    return JSONResponse(content=jsonable_encoder(Document(documentId=id, filename=uploadfile.filename, url=url, size=size)))
+
+@app.post("/analyzePdfDocument")
+def analyzePdfDocument(document: Document, X_TOPOSOID_TRANSVERSAL_STATE: Optional[str] = Header(None, convert_underscores=False)):
+    transversalState = TransversalState.parse_raw(X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
+    try:   
+        filename = f"contents/documents/{document.documentId}.pdf"
+        propositions = Pdf2Knowledge.pdf2Knowledge(document.documentId, filename, transversalState, 0.03, 0.03, isTest=False)
+        #propositions = Pdf2Knowledge.pdf2Knowledge("05a13f82-eb7e-11ef-8174-acde48001122", filename, transversalState, 0.03, 0.03, isTest=True)        
+        LOG.info(f"Pdf Analysis completed.", transversalState)
+        return JSONResponse(content=jsonable_encoder(propositions))
+    except Exception as e:
+        LOG.error(traceback.format_exc(), transversalState)          
+
+
+
