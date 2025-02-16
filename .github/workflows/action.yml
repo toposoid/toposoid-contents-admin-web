@@ -11,7 +11,7 @@ env:
   PJ_VERSION: 0.6-SNAPSHOT
 jobs:
   unit-test_toposoid-contents-admin-web:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Clone ${{ env.PJ_REPO }}
         uses: actions/checkout@v3
@@ -19,10 +19,6 @@ jobs:
             repository: ${{ env.PJ_ACTOR }}/${{ env.PJ_REPO }}
       - name: Execute tests
         run: |
-            sudo apt remove --purge curl
-            sudo apt update
-            sudo apt upgrade
-            sudo apt install -y curl
             cd ${GITHUB_WORKSPACE} && cd ../
             cd ./${{ env.PJ_REPO }}
             docker build --build-arg TARGET_BRANCH=${{ env.PJ_BRANCH }} --tag ${{ env.PJ_REPO }}:${{ env.PJ_VERSION }} -f Dockerfile-workflow .
