@@ -26,6 +26,7 @@ import os
 from fastapi.encoders import jsonable_encoder
 from RdbUtils import searchDocumentAnalysisResultHistoryByDocumentId
 from ElasiticMQUtils import receiveMessage
+import pprint
 
 TOPOSOID_MQ_DOCUMENT_ANALYSIS_QUENE = os.environ["TOPOSOID_MQ_DOCUMENT_ANALYSIS_QUENE"]
 
@@ -168,6 +169,7 @@ class TestToposoidContentsAdminWeb(object):
         with open("DOCUMENT_FOR_TEST.pdf", "rb") as f:
             response = self.client.post("/uploadDocumentFile", headers={"X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},files={"uploadfile": ("DOCUMENT_FOR_TEST.pdf", f, "application/pdf")})
         assert response.status_code == status.HTTP_200_OK
+        pprint.pprint(response)
         document = Document.parse_obj(response.json())
         assert document.filename == "DOCUMENT_FOR_TEST.pdf"
         assert os.path.exists('contents/documents/' + document.documentId + ".pdf" )
@@ -185,5 +187,6 @@ class TestToposoidContentsAdminWeb(object):
         requestHeaders = {'Content-type': 'application/json', 'X_TOPOSOID_TRANSVERSAL_STATE': self.transversalState}        
         response = self.client.post("/analyzePdfDocument" , json=requestJson, headers=requestHeaders) 
         assert response.status_code == status.HTTP_200_OK
+        pprint.pprint(response)
         propositions = Propositions.parse_obj(response.json())
         print("check")    
