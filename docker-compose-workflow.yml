@@ -38,7 +38,7 @@ services:
   data-accessor-mysql-web:
     image: toposoid/data-accessor-mysql-web:0.6-SNAPSHOT
     environment:
-      - PRIVATE_IP_ADDRESS=localhost
+      - PRIVATE_IP_ADDRESS=data-accessor-mysql-web
       - TOPOSOID_RDB_HOST=mysql
       - TOPOSOID_RDB_URL=jdbc:mysql://mysql/toposoiddb?serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false
       - TOPOSOID_JVM_XMS=512m
