@@ -24,8 +24,9 @@ jobs:
             docker build --build-arg TARGET_BRANCH=${{ env.PJ_BRANCH }} --tag ${{ env.PJ_REPO }}:${{ env.PJ_VERSION }} -f Dockerfile-workflow .
             sed -i s/__##YOUR_ADOBE_PDF_SERVICES_CLIENT_ID##__/${{ secrets.ADOBE_PDF_SERVICES_CLIENT_ID }}/g docker-compose-workflow.yml
             sed -i s/__##YOUR_ADOBE_PDF_SERVICES_CLIENT_SECRET##__/${{ secrets.ADOBE_PDF_SERVICES_CLIENT_SECRET }}/g docker-compose-workflow.yml            
-            docker compose -f docker-compose-workflow.yml up -d            
+            docker compose -f docker-compose-workflow.yml up -d                        
             docker compose logs
+            echo 'quit' | curl  --retry 10 --retry-delay 5 --retry-all-errors -s -o /dev/null telnet://localhost:3306
             docker compose -f docker-compose-workflow.yml exec -T ${{ env.PJ_REPO }} bash -c "cd ${{ env.PJ_REPO }} && pytest -v"            
       - name: Docker meta
         id: docker_meta
