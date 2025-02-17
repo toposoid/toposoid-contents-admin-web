@@ -22,10 +22,4 @@ from ToposoidCommon.model import KnowledgeForImage, StatusInfo
 class RegistContentResult(BaseModel):
     knowledgeForImage:KnowledgeForImage
     statusInfo:StatusInfo
-
-class Document(BaseModel):
-    documentId: str
-    filename: str
-    url: str 
-    size:int
     

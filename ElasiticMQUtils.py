@@ -36,6 +36,11 @@ def receiveMessage(queueName):
 
 
 if __name__ == "__main__":
-    import datetime
-    sendMessage(datetime.datetime.today())
-    print(receiveMessage())
+    from ToposoidCommon.model import Document, DocumentRegistration, TransversalState
+    from fastapi.encoders import jsonable_encoder
+    document = Document(documentId="1", filename="fugafuga", url="hogehoge", size=0)
+    transversalState = TransversalState(userId="test-user", username="guest", roleId=0, csrfToken = "")
+    documentRegistration = DocumentRegistration(document=document, transversalState=transversalState)
+    requestJson = str(jsonable_encoder(documentRegistration)).replace("'", "\"")
+    sendMessage(os.environ["TOPOSOID_MQ_DOCUMENT_ANALYSIS_QUENE"], requestJson)
+    print(receiveMessage(os.environ["TOPOSOID_MQ_DOCUMENT_ANALYSIS_QUENE"]))
