@@ -15,8 +15,8 @@
  '''
 
 from fastapi import FastAPI, File, UploadFile, Header
-from ToposoidCommon.model import KnowledgeForImage, StatusInfo, TransversalState
-from model import RegistContentResult, Document
+from ToposoidCommon.model import KnowledgeForImage, StatusInfo, TransversalState, Document, DocumentRegistration
+from model import RegistContentResult
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from starlette.middleware.cors import CORSMiddleware
@@ -97,6 +97,7 @@ async def createUploadImageFile(uploadfile: UploadFile = File(...), X_TOPOSOID_T
 @app.post("/uploadDocumentFile")
 async def createUploadDocumentFile(uploadfile: UploadFile = File(...), X_TOPOSOID_TRANSVERSAL_STATE: Optional[str] = Header(None, convert_underscores=False)):   
     transversalState = TransversalState.parse_raw(X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
+    #TODO:tryブロックをつけて例外の時は、mysqlに書き込む。
     id = str(uuid.uuid1())
     elements = uploadfile.filename.split(".")
     ext = ""
@@ -114,7 +115,9 @@ async def createUploadDocumentFile(uploadfile: UploadFile = File(...), X_TOPOSOI
 
     #Publish to document-analysis-subscriber. Register information in mysql instead of pushing unnecessary things to MQ
     addDocumentAnalysisResultHistory(1, id, uploadfile.filename, X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
-    sendMessage(TOPOSOID_MQ_DOCUMENT_ANALYSIS_QUENE, id)
+    document = Document(documentId=id, filename=uploadfile.filename, url=url, size=size)
+    requestJson = str(jsonable_encoder(DocumentRegistration(document=document, transversalState=transversalState))).replace("'", "\"")
+    sendMessage(TOPOSOID_MQ_DOCUMENT_ANALYSIS_QUENE, requestJson)
     LOG.info(f"Document upload completed.[url:{url}]", transversalState)
     return JSONResponse(content=jsonable_encoder(Document(documentId=id, filename=uploadfile.filename, url=url, size=size)))
 
@@ -123,8 +126,7 @@ def analyzePdfDocument(document: Document, X_TOPOSOID_TRANSVERSAL_STATE: Optiona
     transversalState = TransversalState.parse_raw(X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
     try:   
         filename = f"contents/documents/{document.documentId}.pdf"
-        propositions = Pdf2Knowledge.pdf2Knowledge(document.documentId, filename, transversalState, 0.03, 0.03, isTest=False)
-        #propositions = Pdf2Knowledge.pdf2Knowledge("05a13f82-eb7e-11ef-8174-acde48001122", filename, transversalState, 0.03, 0.03, isTest=True)        
+        propositions = Pdf2Knowledge.pdf2Knowledge(document.documentId, filename, transversalState, 0.03, 0.03, isTest=False)        
         LOG.info(f"Pdf Analysis completed.", transversalState)
         return JSONResponse(content=jsonable_encoder(propositions))
     except Exception as e:
