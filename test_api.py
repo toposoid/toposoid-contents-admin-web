@@ -24,7 +24,7 @@ import pytest
 import uuid
 import os
 from fastapi.encoders import jsonable_encoder
-from RdbUtils import searchDocumentAnalysisResultHistoryByDocumentId
+from RdbUtils import searchDocumentAnalysisResultHistoryByDocumentIdAndStateId, UPLOAD_COMPLETED, ANALYSIS_COMPLETED
 from ElasiticMQUtils import receiveMessage
 import pprint
 
@@ -174,8 +174,10 @@ class TestToposoidContentsAdminWeb(object):
         assert document.filename == "DOCUMENT_FOR_TEST.pdf"
         assert os.path.exists('contents/documents/' + document.documentId + ".pdf" )
         assert os.path.exists('contents/documents/' + document.documentId + "-" + document.filename )
-        documentAnalysisResultHistory = searchDocumentAnalysisResultHistoryByDocumentId(document.documentId, self.transversalState)
-        assert documentAnalysisResultHistory.documentId == document.documentId
+        documentAnalysisResultHistories = searchDocumentAnalysisResultHistoryByDocumentIdAndStateId(document.documentId, UPLOAD_COMPLETED, self.transversalState)
+        assert len(documentAnalysisResultHistories) == 1
+        assert documentAnalysisResultHistories[0].documentId == document.documentId
+        assert documentAnalysisResultHistories[0].stateId == UPLOAD_COMPLETED
         documentRegistrationJson = receiveMessage(TOPOSOID_MQ_DOCUMENT_ANALYSIS_QUENE)
         documentRegistration = DocumentRegistration.parse_raw(documentRegistrationJson)
         assert documentRegistration.document.documentId == document.documentId
@@ -187,10 +189,13 @@ class TestToposoidContentsAdminWeb(object):
         assert response.status_code == status.HTTP_200_OK        
         documentRegistrationJson = receiveMessage(TOPOSOID_MQ_DOCUMENT_ANALYSIS_QUENE)
         documentRegistration = DocumentRegistration.parse_raw(documentRegistrationJson)    
-        requestHeaders = {'Content-type': 'application/json', 'X_TOPOSOID_TRANSVERSAL_STATE': self.transversalState}        
-        #requestJson = jsonable_encoder(documentRegistration.document)).replace("'", "\"")
+        requestHeaders = {'Content-type': 'application/json', 'X_TOPOSOID_TRANSVERSAL_STATE': self.transversalState}                
         response = self.client.post("/analyzePdfDocument" , json=jsonable_encoder(documentRegistration.document) , headers=requestHeaders) 
         assert response.status_code == status.HTTP_200_OK
-        pprint.pprint(response)
         propositions = Propositions.parse_obj(response.json())
+        documentAnalysisResultHistories = searchDocumentAnalysisResultHistoryByDocumentIdAndStateId(documentRegistration.document.documentId, ANALYSIS_COMPLETED, self.transversalState)
+        assert len(documentAnalysisResultHistories) == 1
+        assert documentAnalysisResultHistories[0].documentId == documentRegistration.document.documentId
+        assert documentAnalysisResultHistories[0].stateId == ANALYSIS_COMPLETED
+        assert documentAnalysisResultHistories[0].totalSeparatedNumber == len(propositions.propositions)
         print("check")    

@@ -32,7 +32,8 @@ import uuid
 import ToposoidCommon as tc
 from ToposoidPdfAnalyzer import Pdf2Knowledge
 from ElasiticMQUtils import sendMessage
-from RdbUtils import addDocumentAnalysisResultHistory
+from RdbUtils import addDocumentAnalysisResultHistory, UPLOAD_COMPLETED, ANALYSIS_COMPLETED
+
 
 LOG = tc.LogUtils(__name__)
 TOPOSOID_MQ_DOCUMENT_ANALYSIS_QUENE = os.environ["TOPOSOID_MQ_DOCUMENT_ANALYSIS_QUENE"]
@@ -114,7 +115,7 @@ async def createUploadDocumentFile(uploadfile: UploadFile = File(...), X_TOPOSOI
     url = os.environ["TOPOSOID_CONTENTS_URL"] + "documents/" + id + ext
 
     #Publish to document-analysis-subscriber. Register information in mysql instead of pushing unnecessary things to MQ
-    addDocumentAnalysisResultHistory(1, id, uploadfile.filename, X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
+    addDocumentAnalysisResultHistory(UPLOAD_COMPLETED, id, uploadfile.filename, X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
     document = Document(documentId=id, filename=uploadfile.filename, url=url, size=size)
     requestJson = str(jsonable_encoder(DocumentRegistration(document=document, transversalState=transversalState))).replace("'", "\"")
     sendMessage(TOPOSOID_MQ_DOCUMENT_ANALYSIS_QUENE, requestJson)
@@ -127,6 +128,7 @@ def analyzePdfDocument(document: Document, X_TOPOSOID_TRANSVERSAL_STATE: Optiona
     try:   
         filename = f"contents/documents/{document.documentId}.pdf"
         propositions = Pdf2Knowledge.pdf2Knowledge(document.documentId, filename, transversalState, 0.03, 0.03, isTest=False)        
+        addDocumentAnalysisResultHistory(ANALYSIS_COMPLETED, document.documentId, document.filename, X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""), totalSeparatedNumber=len(propositions.propositions))
         LOG.info(f"Pdf Analysis completed.", transversalState)
         return JSONResponse(content=jsonable_encoder(propositions))
     except Exception as e:
