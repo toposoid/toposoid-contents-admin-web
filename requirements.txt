@@ -5,6 +5,7 @@ pytest==7.4.4
 numpy==1.26.4
 opencv-python==4.10.0.84
 requests==2.31.0
+httpx==0.28.1
 boto3==1.36.20
 -e git+https://github.com/toposoid/toposoid-python-lib.git@feature#egg=ToposoidCommon
 -e git+https://github.com/toposoid/toposoid-pdf-analyzer.git@feature#egg=ToposoidPdfAnalyzer
