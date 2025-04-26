@@ -15,7 +15,7 @@
  '''
 
 from fastapi import FastAPI, File, UploadFile, Header
-from ToposoidCommon.model import KnowledgeForImage, StatusInfo, TransversalState, Document, DocumentRegistration
+from ToposoidCommon.model import KnowledgeForImage, StatusInfo, TransversalState, Document, DocumentRegistration, KnowledgeRegisterHistoryCount
 from model import RegistContentResult
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
@@ -32,7 +32,7 @@ import uuid
 import ToposoidCommon as tc
 from ToposoidPdfAnalyzer import Pdf2Knowledge
 from ElasiticMQUtils import sendMessage
-from RdbUtils import addDocumentAnalysisResultHistory, UPLOAD_COMPLETED, ANALYSIS_COMPLETED
+from RdbUtils import addDocumentAnalysisResultHistory, getKnowledgeRegisterHistoryTotalCountByDocumentId, getKnowledgeRegisterHistoryCountByDocumentId, UPLOAD_COMPLETED, ANALYSIS_COMPLETED
 
 
 LOG = tc.LogUtils(__name__)
@@ -135,4 +135,22 @@ def analyzePdfDocument(document: Document, X_TOPOSOID_TRANSVERSAL_STATE: Optiona
         LOG.error(traceback.format_exc(), transversalState)          
 
 
-
+@app.post("/getTotalPropositionCount")
+def getTotalPropositionCount(knowledgeRegisterHistoryCount:KnowledgeRegisterHistoryCount, X_TOPOSOID_TRANSVERSAL_STATE: Optional[str] = Header(None, convert_underscores=False)):
+    transversalState = TransversalState.parse_raw(X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
+    try:
+        result = getKnowledgeRegisterHistoryTotalCountByDocumentId(knowledgeRegisterHistoryCount, X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
+        LOG.info(f"Get the total count of propositions completed.[documentId:{knowledgeRegisterHistoryCount.documentId}]", transversalState)
+        return JSONResponse(content=jsonable_encoder(result))
+    except Exception as e:
+        LOG.error(traceback.format_exc(), transversalState)          
+    
+@app.post("/getAnalyzedPropositionCount")
+def getAnalyzedPropositionCount(knowledgeRegisterHistoryCount:KnowledgeRegisterHistoryCount, X_TOPOSOID_TRANSVERSAL_STATE: Optional[str] = Header(None, convert_underscores=False)):
+    transversalState = TransversalState.parse_raw(X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
+    try:
+        result = getKnowledgeRegisterHistoryCountByDocumentId(knowledgeRegisterHistoryCount, X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
+        LOG.info(f"Get the analyzed count of propositions completed.[documentId:{knowledgeRegisterHistoryCount.documentId}]", transversalState)
+        return JSONResponse(content=jsonable_encoder(result))
+    except Exception as e:
+        LOG.error(traceback.format_exc(), transversalState)          

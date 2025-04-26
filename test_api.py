@@ -17,14 +17,14 @@ from fastapi.testclient import TestClient
 from fastapi import status
 from api import app
 from model import RegistContentResult
-from ToposoidCommon.model import TransversalState, Propositions, DocumentRegistration, Document
+from ToposoidCommon.model import TransversalState, Propositions, DocumentRegistration, Document, KnowledgeRegisterHistoryCount
 import numpy as np
 from time import sleep
 import pytest
 import uuid
 import os
 from fastapi.encoders import jsonable_encoder
-from RdbUtils import searchDocumentAnalysisResultHistoryByDocumentIdAndStateId, UPLOAD_COMPLETED, ANALYSIS_COMPLETED
+from RdbUtils import addDocumentAnalysisResultHistory, addKnowledgeRegisterHistory, searchDocumentAnalysisResultHistoryByDocumentIdAndStateId, UPLOAD_COMPLETED, ANALYSIS_COMPLETED
 from ElasiticMQUtils import receiveMessage
 import pprint
 
@@ -184,7 +184,7 @@ class TestToposoidContentsAdminWeb(object):
        
     def test_analyzePdfDocument(self):
 
-        with open("DOCUMENT_FOR_TEST.pdf", "rb") as f:
+        with open("JAPANESE_DOCUMENT_FOR_TEST.pdf", "rb") as f:
             response = self.client.post("/uploadDocumentFile", headers={"X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},files={"uploadfile": ("DOCUMENT_FOR_TEST.pdf", f, "application/pdf")})
         assert response.status_code == status.HTTP_200_OK        
         documentRegistrationJson = receiveMessage(TOPOSOID_MQ_DOCUMENT_ANALYSIS_QUENE)
@@ -199,3 +199,29 @@ class TestToposoidContentsAdminWeb(object):
         assert documentAnalysisResultHistories[0].stateId == ANALYSIS_COMPLETED
         assert documentAnalysisResultHistories[0].totalSeparatedNumber == len(propositions.propositions)
         print("check")    
+
+
+    def test_propositionCount(self):        
+        documentId = str(uuid.uuid4())
+        propositionId1 = str(uuid.uuid4())
+        propositionId2 = str(uuid.uuid4())
+        propositionId3 = str(uuid.uuid4())
+        addDocumentAnalysisResultHistory(stateId = 1, documentId = documentId, originalFilename = "test.pdf", transversalStateJson = self.transversalState, totalSeparatedNumber=3)
+        addKnowledgeRegisterHistory(stateId = 1, documentId= documentId, sequentialNumber=1, propositionId=propositionId1, sentences="これはテスト1です。", json="{}", transversalStateJson=self.transversalState)
+        addKnowledgeRegisterHistory(stateId = 1, documentId= documentId, sequentialNumber=2, propositionId=propositionId2, sentences="これはテスト2です。", json="{}", transversalStateJson=self.transversalState)
+        addKnowledgeRegisterHistory(stateId = 1, documentId= documentId, sequentialNumber=3, propositionId=propositionId3, sentences="これはテスト3です。", json="{}", transversalStateJson=self.transversalState)
+        response = self.client.post("/getTotalPropositionCount",
+                    headers={"Content-Type": "application/json", "X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},
+                    json={"documentId":documentId, "count":0}
+        )
+        assert response.status_code == 200
+        knowledgeRegisterHistoryCount = KnowledgeRegisterHistoryCount.parse_obj(response.json())
+        assert knowledgeRegisterHistoryCount.count == 3
+
+        response = self.client.post("/getAnalyzedPropositionCount",
+                    headers={"Content-Type": "application/json", "X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},
+                    json={"documentId":documentId, "count":0}
+        )
+        assert response.status_code == 200
+        knowledgeRegisterHistoryCount = KnowledgeRegisterHistoryCount.parse_obj(response.json())
+        assert knowledgeRegisterHistoryCount.count == 3
