@@ -17,7 +17,7 @@ from fastapi.testclient import TestClient
 from fastapi import status
 from api import app
 from model import RegistContentResult
-from ToposoidCommon.model import TransversalState, Propositions, DocumentRegistration, Document, KnowledgeRegisterHistoryCount
+from ToposoidCommon.model import TransversalState, Propositions, DocumentRegistration, Document, KnowledgeRegisterHistoryCount, DocumentAnalysisResultHistoryRecord
 import numpy as np
 from time import sleep
 import pytest
@@ -26,6 +26,8 @@ import os
 from fastapi.encoders import jsonable_encoder
 from RdbUtils import addDocumentAnalysisResultHistory, addKnowledgeRegisterHistory, searchDocumentAnalysisResultHistoryByDocumentIdAndStateId, UPLOAD_COMPLETED, ANALYSIS_COMPLETED
 from ElasiticMQUtils import receiveMessage
+from typing import List
+from pydantic import parse_obj_as
 import pprint
 
 TOPOSOID_MQ_DOCUMENT_ANALYSIS_QUENE = os.environ["TOPOSOID_MQ_DOCUMENT_ANALYSIS_QUENE"]
@@ -225,3 +227,19 @@ class TestToposoidContentsAdminWeb(object):
         assert response.status_code == 200
         knowledgeRegisterHistoryCount = KnowledgeRegisterHistoryCount.parse_obj(response.json())
         assert knowledgeRegisterHistoryCount.count == 3
+
+    def test_latestAnalyzedState(self):
+        documentId = str(uuid.uuid4())
+        addDocumentAnalysisResultHistory(stateId = 1, documentId = documentId, originalFilename = "test.pdf", transversalStateJson = self.transversalState, totalSeparatedNumber=3)
+        addDocumentAnalysisResultHistory(stateId = 2, documentId = documentId, originalFilename = "test.pdf", transversalStateJson = self.transversalState, totalSeparatedNumber=3)
+        addDocumentAnalysisResultHistory(stateId = 3, documentId = documentId, originalFilename = "test.pdf", transversalStateJson = self.transversalState, totalSeparatedNumber=3)
+
+        response = self.client.post("/getLatestDocumentAnalysisState",
+                    headers={"Content-Type": "application/json", "X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},
+                    json={"stateId":0, "documentId":documentId, "originalFilename": "", "totalSeparatedNumber":-1}
+        )
+        assert response.status_code == 200
+        documentAnalysisResultHistories = parse_obj_as(List[DocumentAnalysisResultHistoryRecord], response.json())
+        assert len(documentAnalysisResultHistories) == 1
+        assert documentAnalysisResultHistories[0].documentId == documentId
+        assert documentAnalysisResultHistories[0].stateId == 3

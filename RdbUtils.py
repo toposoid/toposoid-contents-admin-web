@@ -54,3 +54,10 @@ def getKnowledgeRegisterHistoryCountByDocumentId(knowledgeRegisterHistoryCount, 
     url =  f'http://{os.environ["TOPOSOID_RDB_WEB_HOST"]}:{os.environ["TOPOSOID_RDB_WEB_PORT"]}/getKnowledgeRegisterHistoryCountByDocumentId'
     response = httpx.post(url , data=requestJson, headers=requestHeaders)     
     return parse_obj_as(KnowledgeRegisterHistoryCount, response.json())
+
+def searchLatestDocumentAnalysisStateByDocumentId(documentAnalysisResultHistoryRecord, transversalStateJson):
+    requestJson = str(jsonable_encoder(documentAnalysisResultHistoryRecord)).replace("'", "\"")
+    requestHeaders = {'Content-type': 'application/json', 'X_TOPOSOID_TRANSVERSAL_STATE': transversalStateJson.replace("'", "\"")}
+    url =  f'http://{os.environ["TOPOSOID_RDB_WEB_HOST"]}:{os.environ["TOPOSOID_RDB_WEB_PORT"]}/searchLatestDocumentAnalysisStateByDocumentId'
+    response = httpx.post(url , data=requestJson, headers=requestHeaders)     
+    return parse_obj_as(List[DocumentAnalysisResultHistoryRecord], response.json())
