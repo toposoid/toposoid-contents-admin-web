@@ -15,7 +15,7 @@
  '''
 
 from fastapi import FastAPI, File, UploadFile, Header
-from ToposoidCommon.model import KnowledgeForImage, StatusInfo, TransversalState, Document, DocumentRegistration, KnowledgeRegisterHistoryCount
+from ToposoidCommon.model import KnowledgeForImage, StatusInfo, TransversalState, Document, DocumentRegistration, KnowledgeRegisterHistoryCount, DocumentAnalysisResultHistoryRecord
 from model import RegistContentResult
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
@@ -32,7 +32,7 @@ import uuid
 import ToposoidCommon as tc
 from ToposoidPdfAnalyzer import Pdf2Knowledge
 from ElasiticMQUtils import sendMessage
-from RdbUtils import addDocumentAnalysisResultHistory, getKnowledgeRegisterHistoryTotalCountByDocumentId, getKnowledgeRegisterHistoryCountByDocumentId, UPLOAD_COMPLETED, ANALYSIS_COMPLETED
+from RdbUtils import addDocumentAnalysisResultHistory, getKnowledgeRegisterHistoryTotalCountByDocumentId, getKnowledgeRegisterHistoryCountByDocumentId, searchLatestDocumentAnalysisStateByDocumentId, UPLOAD_COMPLETED, ANALYSIS_COMPLETED
 
 
 LOG = tc.LogUtils(__name__)
@@ -154,3 +154,14 @@ def getAnalyzedPropositionCount(knowledgeRegisterHistoryCount:KnowledgeRegisterH
         return JSONResponse(content=jsonable_encoder(result))
     except Exception as e:
         LOG.error(traceback.format_exc(), transversalState)          
+
+@app.post("/getLatestDocumentAnalysisState")
+def getLatestDocumentAnalysisState(documentAnalysisResultHistoryRecord:DocumentAnalysisResultHistoryRecord, X_TOPOSOID_TRANSVERSAL_STATE: Optional[str] = Header(None, convert_underscores=False)):
+    transversalState = TransversalState.parse_raw(X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
+    try:
+        result = searchLatestDocumentAnalysisStateByDocumentId(documentAnalysisResultHistoryRecord, X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
+        LOG.info(f"Get the analyzed state completed.[documentId:{documentAnalysisResultHistoryRecord.documentId}]", transversalState)
+        return JSONResponse(content=jsonable_encoder(result))
+    except Exception as e:
+        LOG.error(traceback.format_exc(), transversalState)          
+
