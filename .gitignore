@@ -175,3 +175,5 @@ tmp/*
 contents/temporaryUse/*
 !contents/temporaryUse/.gitkeep
 docker-compose-local.yml
+src/toposoidcommon
+src/toposoidpdfanalyzer
