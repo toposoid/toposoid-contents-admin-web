@@ -19,12 +19,10 @@ services:
     ports:
       - 9012:9012
   elasticmq:
-    image: softwaremill/elasticmq
+    image: toposoid/toposoid-elasticmq:0.6-SNAPSHOT
     ports:
       - 9324:9324
       - 9325:9325
-    volumes:
-      - ./elasticmq.conf:/opt/elasticmq.conf
   mysql:
     image: toposoid/toposoid-rdb:0.6-SNAPSHOT
     environment:
