@@ -21,6 +21,7 @@ jobs:
         run: |
             cd ${GITHUB_WORKSPACE} && cd ../
             cd ./${{ env.PJ_REPO }}
+            sed -i s/__##GIT_TOKEN##__/${{ secrets.GIT_TOKEN }}/g requirements.txt
             docker build --build-arg TARGET_BRANCH=${{ env.PJ_BRANCH }} --tag ${{ env.PJ_REPO }}:${{ env.PJ_VERSION }} -f Dockerfile-workflow .
             sed -i s/__##YOUR_ADOBE_PDF_SERVICES_CLIENT_ID##__/${{ secrets.ADOBE_PDF_SERVICES_CLIENT_ID }}/g docker-compose-workflow.yml
             sed -i s/__##YOUR_ADOBE_PDF_SERVICES_CLIENT_SECRET##__/${{ secrets.ADOBE_PDF_SERVICES_CLIENT_SECRET }}/g docker-compose-workflow.yml            
