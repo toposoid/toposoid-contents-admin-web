@@ -40,11 +40,3 @@ jobs:
         with:
           username: ${{ secrets.GHCR_USER }}
           password: ${{ secrets.GHCR_TOKEN }}
-      - name: Build And Push Docker Image
-        uses: docker/build-push-action@v3
-        with:
-          context: .
-          push: true
-          tags: toposoid/${{ env.PJ_REPO }}:${{ env.PJ_VERSION }}
-          build-args: |
-            TARGET_BRANCH=${{ env.PJ_BRANCH }}
