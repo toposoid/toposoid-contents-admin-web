@@ -177,3 +177,4 @@ contents/temporaryUse/*
 docker-compose-local.yml
 src/toposoidcommon
 src/toposoidpdfanalyzer
+Dockerfile-local

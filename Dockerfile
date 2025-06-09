@@ -12,7 +12,8 @@ RUN apt-get update && apt-get upgrade -y \
 && cd toposoid-contents-admin-web \
 && git fetch origin ${TARGET_BRANCH} \
 && git checkout ${TARGET_BRANCH} \
-&& pip install --no-cache-dir --trusted-host pypi.python.org -r requirements.txt
+&& pip install --no-cache-dir --trusted-host pypi.python.org -r requirements.txt \
+&& rm -f requirements.txt
 
 RUN echo "* * * * * root find /app/toposoid-contents-admin-web/contents/temporaryUse/* -name '*' -mmin +10 -delete" >> /etc/crontab \
 && sed -i -e '/pam_loginuid.so/s/^/#/' /etc/pam.d/cron
