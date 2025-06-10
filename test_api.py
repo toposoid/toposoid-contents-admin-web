@@ -208,7 +208,7 @@ class TestToposoidContentsAdminWeb(object):
         propositionId1 = str(uuid.uuid4())
         propositionId2 = str(uuid.uuid4())
         propositionId3 = str(uuid.uuid4())
-        addDocumentAnalysisResultHistory(stateId = 1, documentId = documentId, originalFilename = "test.pdf", transversalStateJson = self.transversalState, totalSeparatedNumber=3)
+        addDocumentAnalysisResultHistory(stateId = 5, documentId = documentId, originalFilename = "test.pdf", transversalStateJson = self.transversalState, totalSeparatedNumber=3)
         addKnowledgeRegisterHistory(stateId = 1, documentId= documentId, sequentialNumber=1, propositionId=propositionId1, sentences="これはテスト1です。", json="{}", transversalStateJson=self.transversalState)
         addKnowledgeRegisterHistory(stateId = 1, documentId= documentId, sequentialNumber=2, propositionId=propositionId2, sentences="これはテスト2です。", json="{}", transversalStateJson=self.transversalState)
         addKnowledgeRegisterHistory(stateId = 1, documentId= documentId, sequentialNumber=3, propositionId=propositionId3, sentences="これはテスト3です。", json="{}", transversalStateJson=self.transversalState)
