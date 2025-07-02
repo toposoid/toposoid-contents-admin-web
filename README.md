@@ -24,6 +24,7 @@ The first startup takes a long time until docker pull finishes.
 ## Usage
 * This API reads the image of the URL, processes the image, and returns the URL managed by Toposoid.
 ```bash
+#ex
 curl -X POST -H "Content-Type: application/json" -H 'X_TOPOSOID_TRANSVERSAL_STATE: {"userId":"test-user", "username":"guest", "roleId":0, "csrfToken":""}'  -d '{
     "id": "d64f48da-0efb-4bf8-b1d4-75a5fa7cec72",
     "imageReference":{
