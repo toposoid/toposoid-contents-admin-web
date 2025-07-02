@@ -37,7 +37,7 @@ jobs:
       - name: Login to CR
         uses: docker/login-action@v2
         with:
-          username: test_toposoid
+          username: toposoid
           password: ${{ secrets.CR_TOKEN }}
       - name: Build And Push Docker Image
         uses: docker/build-push-action@v3
