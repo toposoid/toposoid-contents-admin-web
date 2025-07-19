@@ -1,7 +1,7 @@
 version: '3'
 services:
   toposoid-contents-admin-web:
-    image: toposoid-contents-admin-web:0.6-SNAPSHOT
+    image: toposoid-contents-admin-web:0.6
     tty: true
     environment:
       - TOPOSOID_CONTENTS_URL=http://toposoid-contents-admin-web:9012/
@@ -19,12 +19,12 @@ services:
     ports:
       - 9012:9012
   elasticmq:
-    image: toposoid/toposoid-elasticmq:0.6-SNAPSHOT
+    image: toposoid/toposoid-elasticmq:0.6
     ports:
       - 9324:9324
       - 9325:9325
   mysql:
-    image: toposoid/toposoid-rdb:0.6-SNAPSHOT
+    image: toposoid/toposoid-rdb:0.6
     environment:
       - MYSQL_DATABASE=toposoiddb
       - MYSQL_USER=toposoid
@@ -34,7 +34,7 @@ services:
     ports:
       - 3306:3306
   data-accessor-mysql-web:
-    image: toposoid/data-accessor-mysql-web:0.6-SNAPSHOT
+    image: toposoid/data-accessor-mysql-web:0.6
     environment:
       - PRIVATE_IP_ADDRESS=data-accessor-mysql-web
       - TOPOSOID_RDB_HOST=mysql
