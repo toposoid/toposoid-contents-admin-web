@@ -18,7 +18,7 @@ services:
     ports:
       - 9012:9012
   elasticmq:
-    image: toposoid/toposoid-elasticmq:0.6-SNAPSHOT
+    image: toposoid/toposoid-elasticmq:0.6
     ports:
       - 9324:9324
       - 9325:9325
