@@ -128,7 +128,8 @@ def analyzePdfDocument(document: Document, X_TOPOSOID_TRANSVERSAL_STATE: Optiona
     transversalState = TransversalState.parse_raw(X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
     try:   
         filename = f"contents/documents/{document.documentId}.pdf"
-        propositions = Pdf2Knowledge.pdf2Knowledge(document.documentId, filename, transversalState, 0.03, 0.03, isTest=False)        
+        pdf2Knowledge = Pdf2Knowledge()
+        propositions = pdf2Knowledge.pdf2Knowledge(document.documentId, filename, transversalState, 0.03, 0.03, isTest=False)        
         addDocumentAnalysisResultHistory(ANALYSIS_COMPLETED, document.documentId, document.filename, X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""), totalSeparatedNumber=len(propositions.propositions))
         LOG.info(f"Pdf Analysis completed.", transversalState)
         return JSONResponse(content=jsonable_encoder(propositions))
