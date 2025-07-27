@@ -10,10 +10,10 @@ env:
   PJ_ACTOR: toposoid
   PJ_REPO: toposoid-contents-admin-web
   PJ_BRANCH: main
-  PJ_VERSION: 0.5
+  PJ_VERSION: 0.6
 jobs:
   unit-test_toposoid-contents-admin-web:
-    runs-on: ubuntu-20.04
+    runs-on: self-hosted
     steps:
       - name: Clone ${{ env.PJ_REPO }}
         uses: actions/checkout@v3
@@ -22,21 +22,28 @@ jobs:
       - name: Execute tests
         run: |
             cd ${GITHUB_WORKSPACE} && cd ../
-            cd ./${{ env.PJ_REPO }}
+            cd ./${{ env.PJ_REPO }}  
+            docker rmi --force toposoid/${{ env.PJ_REPO }}:${{ env.PJ_VERSION }}> /dev/null 2>&1 && :
+            docker system prune -f
+            docker volume prune -f
             docker build --build-arg TARGET_BRANCH=${{ env.PJ_BRANCH }} --tag ${{ env.PJ_REPO }}:${{ env.PJ_VERSION }} -f Dockerfile-workflow .
-            docker-compose -f docker-compose-workflow.yml up -d            
-            docker-compose logs
-            docker-compose -f docker-compose-workflow.yml exec -T ${{ env.PJ_REPO }} bash -c "cd ${{ env.PJ_REPO }} && pytest -v"            
+            sed -i s/__##YOUR_ADOBE_PDF_SERVICES_CLIENT_ID##__/${{ secrets.ADOBE_PDF_SERVICES_CLIENT_ID }}/g docker-compose-workflow.yml
+            sed -i s/__##YOUR_ADOBE_PDF_SERVICES_CLIENT_SECRET##__/${{ secrets.ADOBE_PDF_SERVICES_CLIENT_SECRET }}/g docker-compose-workflow.yml            
+            docker compose -f docker-compose-workflow.yml up -d            
+            docker compose logs
+            sleep 10
+            echo 'quit' | curl -s -o /dev/null telnet://localhost:3306
+            docker compose -f docker-compose-workflow.yml exec -T ${{ env.PJ_REPO }} bash -c "cd ${{ env.PJ_REPO }} && pytest -v"            
       - name: Docker meta
         id: docker_meta
         uses: crazy-max/ghaction-docker-meta@v3
         with:
           images: toposoid/${{ env.PJ_REPO }}:${{ env.PJ_VERSION }}
-      - name: Login to GHCR
+      - name: Login to CR
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.GHCR_USER }}
-          password: ${{ secrets.GHCR_TOKEN }}
+          username: toposoid
+          password: ${{ secrets.CR_TOKEN }}
       - name: Build And Push Docker Image
         uses: docker/build-push-action@v3
         with:

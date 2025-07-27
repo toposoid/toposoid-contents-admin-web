@@ -1,4 +1,4 @@
-FROM python:3.9.16
+FROM python:3.10.13
 
 WORKDIR /app
 ARG TARGET_BRANCH
@@ -12,6 +12,7 @@ RUN apt-get update && apt-get upgrade -y \
 && cd toposoid-contents-admin-web \
 && git fetch origin ${TARGET_BRANCH} \
 && git checkout ${TARGET_BRANCH} \
+&& sed -i s/__##GIT_BRANCH##__/${TARGET_BRANCH}/g requirements.txt \
 && pip install --no-cache-dir --trusted-host pypi.python.org -r requirements.txt
 
 RUN echo "* * * * * root find /app/toposoid-contents-admin-web/contents/temporaryUse/* -name '*' -mmin +10 -delete" >> /etc/crontab \

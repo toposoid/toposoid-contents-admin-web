@@ -166,7 +166,15 @@ logs/*
 docker-compose-local.yml
 contents/images/*
 !contents/images/.gitkeep
+contents/tables/*
+!contents/tables/.gitkeep
+contents/documents/*
+!contents/documents/.gitkeep
 tmp/*
 !tmp/.gitkeep
 contents/temporaryUse/*
 !contents/temporaryUse/.gitkeep
+docker-compose-local.yml
+src/toposoidcommon
+src/toposoidpdfanalyzer
+Dockerfile-local
