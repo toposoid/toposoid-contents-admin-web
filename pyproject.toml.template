@@ -1,0 +1,22 @@
+[project]
+name = "toposoid-contents-admin-web"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "boto3==1.36.20",
+    "fastapi[all]==0.112.2",
+    "httpx==0.28.1",
+    "numpy==1.26.4",
+    "opencv-python==4.10.0.84",
+    "pip>=26.0.1",
+    "pydantic==2.8.2",
+    "pytest==7.4.4",
+    "requests==2.31.0",
+    "uvicorn[standard]==0.15.0",
+]
+
+[tool.uv.sources]
+toposoid-python-lib = { git = "https://github.com/toposoid/toposoid-python-lib.git", rev = "__##GIT_BRANCH##__" }
+toposoidpdfanalyzer = { path = "../../tmp/toposoid-pdf-analyzer", editable = true }

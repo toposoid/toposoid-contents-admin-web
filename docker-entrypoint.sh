@@ -3,4 +3,5 @@
 #sed -i -e '/pam_loginuid.so/s/^/#/' /etc/pam.d/cron
 cron -f && touch /etc/crontab && tail -f /dev/null &
 cd /app/toposoid-contents-admin-web
-uvicorn api:app --reload --host 0.0.0.0 --port 9012
+source /root/.local/bin/env
+uv run uvicorn api:app --reload --host 0.0.0.0 --port 9012
