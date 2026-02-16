@@ -4,6 +4,8 @@ WORKDIR /app
 ARG TARGET_BRANCH
 ENV DEPLOYMENT=local
 
+SHELL ["/bin/bash", "-c"]
+
 RUN cp /usr/share/zoneinfo/Asia/Tokyo /etc/localtime
 
 RUN apt-get update && apt-get upgrade -y \
