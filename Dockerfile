@@ -9,7 +9,7 @@ SHELL ["/bin/bash", "-c"]
 RUN cp /usr/share/zoneinfo/Asia/Tokyo /etc/localtime
 
 RUN apt-get update && apt-get upgrade -y \
-&& apt-get -y install git unzip libgl1-mesa-dev \
+&& apt-get -y install git unzip libgl1-mesa-dev cron \
 && curl -LsSf https://astral.sh/uv/install.sh | sh \
 && source ${HOME}/.local/bin/env \
 && git clone https://github.com/toposoid/toposoid-contents-admin-web.git \
