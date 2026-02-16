@@ -178,3 +178,7 @@ docker-compose-local.yml
 src/toposoidcommon
 src/toposoidpdfanalyzer
 Dockerfile-local
+.devcontainer
+docker-compose-dev.yml
+pyproject.toml
+uv.lock

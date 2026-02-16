@@ -31,7 +31,7 @@ jobs:
             docker compose logs
             sleep 10
             echo 'quit' | curl -s -o /dev/null telnet://localhost:3306
-            docker compose -f docker-compose-workflow.yml exec -T ${{ env.PJ_REPO }} bash -c "cd ${{ env.PJ_REPO }} && pytest -v"
+            docker compose -f docker-compose-workflow.yml exec -T ${{ env.PJ_REPO }} bash -c "cd ${{ env.PJ_REPO }} && source /root/.local/bin/env && uv run pytest -v"
       - name: Docker meta
         id: docker_meta
         uses: crazy-max/ghaction-docker-meta@v3
