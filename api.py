@@ -16,8 +16,8 @@
 
 
 from fastapi import FastAPI, File, UploadFile, Header
-from ToposoidCommon.model import KnowledgeForImage, StatusInfo, TransversalState, Document, DocumentRegistration, KnowledgeRegisterHistoryCount, DocumentAnalysisResultHistoryRecord
-from model import RegistContentResult
+from ToposoidCommon.model import KnowledgeForImage, KnowledgeForTable, StatusInfo, TransversalState, Document, DocumentRegistration, KnowledgeRegisterHistoryCount, DocumentAnalysisResultHistoryRecord
+from model import RegistImageContentResult, RegistTableContentResult
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from starlette.middleware.cors import CORSMiddleware
@@ -26,6 +26,7 @@ from typing import Optional
 import os
 import traceback
 from ImageAdmin import ImageAdmin
+from TableAdmin import TableAdmin
 from middleware import ErrorHandlingMiddleware
 from fastapi.staticfiles import StaticFiles
 import shutil
@@ -45,6 +46,7 @@ app = FastAPI(
 )
 app.add_middleware(ErrorHandlingMiddleware)
 imageAdmin = ImageAdmin()
+tableAdmin = TableAdmin()
 
 app.add_middleware(
     CORSMiddleware,
@@ -61,12 +63,12 @@ def registImage(knowledgeForImage:KnowledgeForImage, X_TOPOSOID_TRANSVERSAL_STAT
     transversalState = TransversalState.parse_raw(X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
     try:           
         updatedKnowledgeForImage = imageAdmin.registImage(knowledgeForImage, False)
-        response = JSONResponse(content=jsonable_encoder(RegistContentResult(knowledgeForImage=updatedKnowledgeForImage, statusInfo=StatusInfo(status="OK", message="")) ))
+        response = JSONResponse(content=jsonable_encoder(RegistImageContentResult(knowledgeForImage=updatedKnowledgeForImage, statusInfo=StatusInfo(status="OK", message="")) ))
         LOG.info(f"Image upload completed.[url:{knowledgeForImage.imageReference.reference.url}]", transversalState)
         return response
     except Exception as e:
         LOG.error(traceback.format_exc(), transversalState)
-        return JSONResponse(content=jsonable_encoder(RegistContentResult(knowledgeForImage=knowledgeForImage, statusInfo=StatusInfo(status="ERROR", message=traceback.format_exc()))))
+        return JSONResponse(content=jsonable_encoder(RegistImageContentResult(knowledgeForImage=knowledgeForImage, statusInfo=StatusInfo(status="ERROR", message=traceback.format_exc()))))
 
 @app.post("/uploadTemporaryImage",
           summary='upload image files as temporary')
@@ -74,12 +76,12 @@ def uploadTemporaryImage(knowledgeForImage:KnowledgeForImage, X_TOPOSOID_TRANSVE
     transversalState = TransversalState.parse_raw(X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
     try:            
         updatedKnowledgeForImage = imageAdmin.registImage(knowledgeForImage, True)
-        response = JSONResponse(content=jsonable_encoder(RegistContentResult(knowledgeForImage=updatedKnowledgeForImage, statusInfo=StatusInfo(status="OK", message=""))))
+        response = JSONResponse(content=jsonable_encoder(RegistImageContentResult(knowledgeForImage=updatedKnowledgeForImage, statusInfo=StatusInfo(status="OK", message=""))))
         LOG.info(f"Image upload completed.[url:{updatedKnowledgeForImage.imageReference.reference.url}]", transversalState)
         return response
     except Exception as e:
         LOG.error(traceback.format_exc(), transversalState)
-        return JSONResponse(content=jsonable_encoder(RegistContentResult(knowledgeForImage=knowledgeForImage, statusInfo=StatusInfo(status="ERROR", message=traceback.format_exc()))))
+        return JSONResponse(content=jsonable_encoder(RegistImageContentResult(knowledgeForImage=knowledgeForImage, statusInfo=StatusInfo(status="ERROR", message=traceback.format_exc()))))
 
 @app.post("/uploadImageFile")
 async def createUploadImageFile(uploadfile: UploadFile = File(...), X_TOPOSOID_TRANSVERSAL_STATE: Optional[str] = Header(None, convert_underscores=False)):   
@@ -95,6 +97,49 @@ async def createUploadImageFile(uploadfile: UploadFile = File(...), X_TOPOSOID_T
     return {
         'url': url,        
     }
+
+@app.post("/registTable",
+          summary='register table files')
+def registImage(knowledgeForTable:KnowledgeForTable, X_TOPOSOID_TRANSVERSAL_STATE: Optional[str] = Header(None, convert_underscores=False)):
+    transversalState = TransversalState.parse_raw(X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
+    try:           
+        updatedKnowledgeForTable = tableAdmin.registTable(knowledgeForTable, False)
+        response = JSONResponse(content=jsonable_encoder(RegistTableContentResult(knowledgeForTable=updatedKnowledgeForTable, statusInfo=StatusInfo(status="OK", message="")) ))
+        LOG.info(f"Table upload completed.[url:{knowledgeForTable.tableReference.reference.url}]", transversalState)
+        return response
+    except Exception as e:
+        LOG.error(traceback.format_exc(), transversalState)
+        return JSONResponse(content=jsonable_encoder(RegistTableContentResult(knowledgeForTable=knowledgeForTable, statusInfo=StatusInfo(status="ERROR", message=traceback.format_exc()))))
+
+@app.post("/uploadTemporaryTable",
+          summary='upload table files as temporary')
+def uploadTemporaryImage(knowledgeForTable:KnowledgeForTable, X_TOPOSOID_TRANSVERSAL_STATE: Optional[str] = Header(None, convert_underscores=False)):
+    transversalState = TransversalState.parse_raw(X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
+    try:            
+        updatedKnowledgeForTable = tableAdmin.registTable(knowledgeForTable, True)
+        response = JSONResponse(content=jsonable_encoder(RegistTableContentResult(knowledgeForTable=updatedKnowledgeForTable, statusInfo=StatusInfo(status="OK", message=""))))
+        LOG.info(f"Image upload completed.[url:{updatedKnowledgeForTable.tableReference.reference.url}]", transversalState)
+        return response
+    except Exception as e:
+        LOG.error(traceback.format_exc(), transversalState)
+        return JSONResponse(content=jsonable_encoder(RegistTableContentResult(knowledgeForImage=knowledgeForTable, statusInfo=StatusInfo(status="ERROR", message=traceback.format_exc()))))
+
+
+@app.post("/uploadTableFile")
+async def createUploadImageFile(uploadfile: UploadFile = File(...), X_TOPOSOID_TRANSVERSAL_STATE: Optional[str] = Header(None, convert_underscores=False)):   
+    transversalState = TransversalState.parse_raw(X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
+    id = str(uuid.uuid1())
+    path = f'tmp/{id}-{uploadfile.filename}'
+    #url = os.environ["TOPOSOID_CONTENTS_URL"] + "temporaryUse/" + id + "-" + uploadfile.filename
+    with open(path, 'w+b') as buffer:
+        shutil.copyfileobj(uploadfile.file, buffer)    
+    #TODO:check File
+    url = tableAdmin.convertUtf8(path, id)
+    LOG.info(f"Table upload completed.[url:{url}", transversalState)
+    return {
+        'url': url,        
+    }
+
 
 @app.post("/uploadDocumentFile")
 async def createUploadDocumentFile(uploadfile: UploadFile = File(...), X_TOPOSOID_TRANSVERSAL_STATE: Optional[str] = Header(None, convert_underscores=False)):   

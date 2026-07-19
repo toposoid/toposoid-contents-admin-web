@@ -17,10 +17,20 @@
 
 from pydantic import BaseModel
 from typing import List
+from enum import Enum
 
-from ToposoidCommon.model import KnowledgeForImage, StatusInfo
+from ToposoidCommon.model import KnowledgeForImage, KnowledgeForTable, StatusInfo
 
-class RegistContentResult(BaseModel):
+class RegistImageContentResult(BaseModel):
     knowledgeForImage:KnowledgeForImage
     statusInfo:StatusInfo
     
+
+class RegistTableContentResult(BaseModel):
+    knowledgeForTable:KnowledgeForTable
+    statusInfo:StatusInfo
+
+class TableFileType(Enum):
+    NOT_APPLICABLE = 0
+    TEXT = 1
+    EXCEL = 2
