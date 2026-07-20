@@ -27,6 +27,7 @@ import os
 import traceback
 from ImageAdmin import ImageAdmin
 from TableAdmin import TableAdmin
+from RawDataAdmin import RawDataAdmin
 from middleware import ErrorHandlingMiddleware
 from fastapi.staticfiles import StaticFiles
 import shutil
@@ -47,6 +48,7 @@ app = FastAPI(
 app.add_middleware(ErrorHandlingMiddleware)
 imageAdmin = ImageAdmin()
 tableAdmin = TableAdmin()
+rawDataAdmin = RawDataAdmin()
 
 app.add_middleware(
     CORSMiddleware,
@@ -62,6 +64,7 @@ app.mount("/contents", StaticFiles(directory="contents"), name="contents")
 def registImage(knowledgeForImage:KnowledgeForImage, X_TOPOSOID_TRANSVERSAL_STATE: Optional[str] = Header(None, convert_underscores=False)):
     transversalState = TransversalState.parse_raw(X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
     try:           
+        rawDataAdmin.getRawData(knowledgeForImage.id, None, knowledgeForImage.imageReference.reference.originalUrlOrReference)
         updatedKnowledgeForImage = imageAdmin.registImage(knowledgeForImage, False)
         response = JSONResponse(content=jsonable_encoder(RegistImageContentResult(knowledgeForImage=updatedKnowledgeForImage, statusInfo=StatusInfo(status="OK", message="")) ))
         LOG.info(f"Image upload completed.[url:{knowledgeForImage.imageReference.reference.url}]", transversalState)
@@ -100,9 +103,11 @@ async def createUploadImageFile(uploadfile: UploadFile = File(...), X_TOPOSOID_T
 
 @app.post("/registTable",
           summary='register table files')
-def registImage(knowledgeForTable:KnowledgeForTable, X_TOPOSOID_TRANSVERSAL_STATE: Optional[str] = Header(None, convert_underscores=False)):
+def registTable(knowledgeForTable:KnowledgeForTable, X_TOPOSOID_TRANSVERSAL_STATE: Optional[str] = Header(None, convert_underscores=False)):
     transversalState = TransversalState.parse_raw(X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
-    try:           
+    try: 
+        
+        rawDataAdmin.getRawData(id, None, knowledgeForTable)
         updatedKnowledgeForTable = tableAdmin.registTable(knowledgeForTable, False)
         response = JSONResponse(content=jsonable_encoder(RegistTableContentResult(knowledgeForTable=updatedKnowledgeForTable, statusInfo=StatusInfo(status="OK", message="")) ))
         LOG.info(f"Table upload completed.[url:{knowledgeForTable.tableReference.reference.url}]", transversalState)
@@ -113,9 +118,10 @@ def registImage(knowledgeForTable:KnowledgeForTable, X_TOPOSOID_TRANSVERSAL_STAT
 
 @app.post("/uploadTemporaryTable",
           summary='upload table files as temporary')
-def uploadTemporaryImage(knowledgeForTable:KnowledgeForTable, X_TOPOSOID_TRANSVERSAL_STATE: Optional[str] = Header(None, convert_underscores=False)):
+def uploadTemporaryTable(knowledgeForTable:KnowledgeForTable, X_TOPOSOID_TRANSVERSAL_STATE: Optional[str] = Header(None, convert_underscores=False)):
     transversalState = TransversalState.parse_raw(X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
-    try:            
+    try:        
+        rawDataAdmin.getRawData(id, None, knowledgeForTable)    
         updatedKnowledgeForTable = tableAdmin.registTable(knowledgeForTable, True)
         response = JSONResponse(content=jsonable_encoder(RegistTableContentResult(knowledgeForTable=updatedKnowledgeForTable, statusInfo=StatusInfo(status="OK", message=""))))
         LOG.info(f"Image upload completed.[url:{updatedKnowledgeForTable.tableReference.reference.url}]", transversalState)
@@ -126,14 +132,16 @@ def uploadTemporaryImage(knowledgeForTable:KnowledgeForTable, X_TOPOSOID_TRANSVE
 
 
 @app.post("/uploadTableFile")
-async def createUploadImageFile(uploadfile: UploadFile = File(...), X_TOPOSOID_TRANSVERSAL_STATE: Optional[str] = Header(None, convert_underscores=False)):   
+async def createUploadTableFile(uploadfile: UploadFile = File(...), X_TOPOSOID_TRANSVERSAL_STATE: Optional[str] = Header(None, convert_underscores=False)):   
     transversalState = TransversalState.parse_raw(X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
     id = str(uuid.uuid1())
     path = f'tmp/{id}-{uploadfile.filename}'
+    rawDataAdmin.getRawData(id, uploadfile.file, uploadfile.filename, True)
+
     #url = os.environ["TOPOSOID_CONTENTS_URL"] + "temporaryUse/" + id + "-" + uploadfile.filename
-    with open(path, 'w+b') as buffer:
-        shutil.copyfileobj(uploadfile.file, buffer)    
-    #TODO:check File
+    #with open(path, 'w+b') as buffer:
+    #    shutil.copyfileobj(uploadfile.file, buffer)    
+    
     url = tableAdmin.convertUtf8(path, id)
     LOG.info(f"Table upload completed.[url:{url}", transversalState)
     return {

@@ -24,7 +24,7 @@ import time
 
 class ImageAdmin():
     def registImage(self, knowledgeForImage:KnowledgeForImage, isTemporaryUse = False):
-                
+        """
         # 画像を取得
         for attempt in range(3):
             try:
@@ -45,7 +45,7 @@ class ImageAdmin():
                 time.sleep(1)
         
         #TODO:check File
-        
+        """     
         #with open('tmp/' + knowledgeForImage.id, 'wb') as f:
         #    f.write(response.content)
         

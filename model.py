@@ -34,3 +34,4 @@ class TableFileType(Enum):
     NOT_APPLICABLE = 0
     TEXT = 1
     EXCEL = 2
+    EXCEL_OLD = 3

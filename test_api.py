@@ -17,7 +17,7 @@
 from fastapi.testclient import TestClient
 from fastapi import status
 from api import app
-from model import RegistContentResult
+from model import RegistImageContentResult
 from ToposoidCommon.model import TransversalState, Propositions, DocumentRegistration, Document, KnowledgeRegisterHistoryCount, DocumentAnalysisResultHistoryRecord
 import numpy as np
 from time import sleep
@@ -74,7 +74,7 @@ class TestToposoidContentsAdminWeb(object):
                                 "height": 435}
                             })
         assert response.status_code == 200
-        registContentResult = RegistContentResult.parse_obj(response.json())
+        registContentResult = RegistImageContentResult.parse_obj(response.json())
         assert registContentResult.statusInfo.status == "OK"
         assert registContentResult.knowledgeForImage.imageReference.reference.url == os.environ["TOPOSOID_CONTENTS_URL"] + "images/" + self.id1 + ".jpg"
         assert os.path.exists('contents/images/' + self.id1 + "-org.jpeg")
@@ -102,7 +102,7 @@ class TestToposoidContentsAdminWeb(object):
                                 "height": 0}
                             })
         assert response.status_code == 200
-        registContentResult = RegistContentResult.parse_obj(response.json())
+        registContentResult = RegistImageContentResult.parse_obj(response.json())
         assert registContentResult.statusInfo.status == "OK"
         assert registContentResult.knowledgeForImage.imageReference.reference.url == os.environ["TOPOSOID_CONTENTS_URL"] + "images/" + self.id2 + ".jpg"
         assert os.path.exists('contents/images/' + self.id2 + "-org.jpeg")
@@ -129,7 +129,7 @@ class TestToposoidContentsAdminWeb(object):
                                 "height": 435}
                             })
         assert response.status_code == 200
-        registContentResult = RegistContentResult.parse_obj(response.json())
+        registContentResult = RegistImageContentResult.parse_obj(response.json())
         assert registContentResult.statusInfo.status == "OK"
         assert registContentResult.knowledgeForImage.imageReference.reference.url == os.environ["TOPOSOID_CONTENTS_URL"] + "temporaryUse/" + self.id1 + ".jpg"
         assert os.path.exists('contents/temporaryUse/' + self.id1 + "-org.jpeg")
@@ -156,7 +156,7 @@ class TestToposoidContentsAdminWeb(object):
                                 "height": 0}
                             })
         assert response.status_code == 200
-        registContentResult = RegistContentResult.parse_obj(response.json())
+        registContentResult = RegistImageContentResult.parse_obj(response.json())
         assert registContentResult.statusInfo.status == "OK"
         assert registContentResult.knowledgeForImage.imageReference.reference.url == os.environ["TOPOSOID_CONTENTS_URL"] + "temporaryUse/" + self.id2 + ".jpg"
         assert os.path.exists('contents/temporaryUse/' + self.id2 + "-org.jpeg")
