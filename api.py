@@ -220,7 +220,7 @@ def getLatestDocumentAnalysisState(documentAnalysisResultHistoryRecord:DocumentA
     except Exception as e:
         LOG.error(traceback.format_exc(), transversalState)          
 
-@app.post("transferFile")
+@app.post("/transferFile")
 def transferFile(uploadResult:UploadResult= Depends(UploadResult.as_form), uploadfile: UploadFile = File(...), X_TOPOSOID_TRANSVERSAL_STATE: Optional[str] = Header(None, convert_underscores=False)):
     transversalState = TransversalState.parse_raw(X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
     try:

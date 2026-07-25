@@ -15,9 +15,11 @@
 '''
 
 
-from pydantic import BaseModel
-from typing import List
+from pydantic import BaseModel, model_validator
+from typing import List, Any
 from enum import Enum
+from fastapi import Form
+import json
 
 from ToposoidCommon.model import KnowledgeForImage, KnowledgeForTable, StatusInfo
 
@@ -38,3 +40,18 @@ class TableFileType(Enum):
 
 class UploadResult(BaseModel):
     url: str 
+    @model_validator(mode="before")
+    @classmethod
+    def validate_to_json(cls, data: Any) -> Any:
+        if isinstance(data, str):
+            return json.loads(data)
+        return data
+
+    # 💡 フォームデータからこのモデルを生成するためのヘルパー関数を追加
+    @classmethod
+    def as_form(
+        cls,
+        featureType: int = Form(...),
+        url: str = Form(...)
+    ):
+        return cls(featureType=featureType, url=url)    
