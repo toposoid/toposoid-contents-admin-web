@@ -15,9 +15,9 @@
 '''
 
 
-from fastapi import FastAPI, File, UploadFile, Header
+from fastapi import FastAPI, File, UploadFile, Header, Depends
 from ToposoidCommon.model import KnowledgeForImage, KnowledgeForTable, StatusInfo, TransversalState, Document, DocumentRegistration, KnowledgeRegisterHistoryCount, DocumentAnalysisResultHistoryRecord
-from model import RegistImageContentResult, RegistTableContentResult
+from model import RegistImageContentResult, RegistTableContentResult, UploadResult
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from starlette.middleware.cors import CORSMiddleware
@@ -220,3 +220,15 @@ def getLatestDocumentAnalysisState(documentAnalysisResultHistoryRecord:DocumentA
     except Exception as e:
         LOG.error(traceback.format_exc(), transversalState)          
 
+@app.post("transferFile")
+def transferFile(uploadResult:UploadResult= Depends(UploadResult.as_form), uploadfile: UploadFile = File(...), X_TOPOSOID_TRANSVERSAL_STATE: Optional[str] = Header(None, convert_underscores=False)):
+    transversalState = TransversalState.parse_raw(X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
+    try:
+        filename = uploadResult.url.split("/")[-1]
+        with open(f"contents/temporaryUse/{filename}", 'w+b') as buffer:
+            shutil.copyfileobj(uploadfile.file, buffer)    
+        LOG.info(f"File transfer was completed. {filename}", transversalState)
+        return JSONResponse(content=jsonable_encoder(StatusInfo(status="OK", message="")))
+    except Exception as e:
+        LOG.error(traceback.format_exc(), transversalState)          
+        return JSONResponse(content=jsonable_encoder(StatusInfo(status="ERROR", message=f"{e}")))

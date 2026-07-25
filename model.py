@@ -35,3 +35,6 @@ class TableFileType(Enum):
     TEXT = 1
     EXCEL = 2
     EXCEL_OLD = 3
+
+class UploadResult(BaseModel):
+    url: str 
