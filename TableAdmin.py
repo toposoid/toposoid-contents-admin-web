@@ -15,7 +15,7 @@
 '''
 
 
-
+"""
 from ToposoidCommon import KnowledgeForTable
 import tempfile
 from charset_normalizer import from_bytes
@@ -118,4 +118,4 @@ class TableAdmin():
             return "%stemporaryUse/%s.tsv" % (os.environ["TOPOSOID_CONTENTS_URL"], id)                      
         else:
             raise Exception("The only file formats accepted for the table are Excel or text files.")
-                
+"""

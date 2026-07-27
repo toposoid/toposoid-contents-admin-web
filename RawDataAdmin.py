@@ -1,4 +1,5 @@
 
+"""
 from typing import BinaryIO
 import shutil
 import requests
@@ -41,3 +42,4 @@ class RawDataAdmin():
                 shutil.copyfileobj(file, buffer)    
             self.checkFile()
         
+"""

@@ -18,7 +18,7 @@ from fastapi.testclient import TestClient
 from fastapi import status
 from api import app
 from model import RegistImageContentResult
-from ToposoidCommon.model import TransversalState, Propositions, DocumentRegistration, Document, KnowledgeRegisterHistoryCount, DocumentAnalysisResultHistoryRecord
+from ToposoidCommon.model import TransversalState, Propositions, DocumentRegistration, Document, KnowledgeRegisterHistoryCount, DocumentAnalysisResultHistoryRecord, StatusInfo
 import numpy as np
 from time import sleep
 import pytest
@@ -30,6 +30,7 @@ from ElasiticMQUtils import receiveMessage
 from typing import List
 from pydantic import parse_obj_as
 import pprint
+import shutil
 
 TOPOSOID_MQ_DOCUMENT_ANALYSIS_QUENE = os.environ["TOPOSOID_MQ_DOCUMENT_ANALYSIS_QUENE"]
 
@@ -52,7 +53,106 @@ class TestToposoidContentsAdminWeb(object):
             os.remove('contents/images/' + cls.id1 + ".jpeg")
         if os.path.isfile('contents/images/' + cls.id2 + ".jpeg"):    
             os.remove('contents/images/' + cls.id2 + ".jpeg")
-        
+
+
+
+    def test_transferFile(self):
+        target = f"tmp/{str(uuid.uuid4())}.png"
+        shutil.copy("IMG_TEST.png",target)
+
+        with open(target, "rb") as f:
+            response = self.client.post("/transferFile", headers={"X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},files={"uploadfile": (target.split('/')[-1], f, "image/png")})
+        assert response.status_code == status.HTTP_200_OK
+        statusInfo = parse_obj_as(StatusInfo, response.json())
+        assert(statusInfo.status == "OK")        
+        assert(os.path.exists(f"contents/temporaryUse/{target.split('/')[-1]}"))
+
+    """
+    def test_analyzePdfDocument2(self):
+
+        with open("DOCUMENT1.pdf", "rb") as f:
+            response = self.client.post("/uploadDocumentFile", headers={"X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},files={"uploadfile": ("DOCUMENT1.pdf", f, "application/pdf")})
+        assert response.status_code == status.HTTP_200_OK        
+        documentRegistrationJson = receiveMessage(TOPOSOID_MQ_DOCUMENT_ANALYSIS_QUENE)
+        documentRegistration = DocumentRegistration.parse_raw(documentRegistrationJson)    
+        requestHeaders = {'Content-type': 'application/json', 'X_TOPOSOID_TRANSVERSAL_STATE': self.transversalState}                
+        response = self.client.post("/analyzePdfDocument" , json=jsonable_encoder(documentRegistration.document) , headers=requestHeaders) 
+        assert response.status_code == status.HTTP_200_OK
+        propositions = Propositions.parse_obj(response.json())
+        print(len(propositions.propositions))
+        with open("CONTRACT2.pdf", "rb") as f:
+            response = self.client.post("/uploadDocumentFile", headers={"X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},files={"uploadfile": ("CONTRACT2.pdf", f, "application/pdf")})
+        assert response.status_code == status.HTTP_200_OK        
+        documentRegistrationJson = receiveMessage(TOPOSOID_MQ_DOCUMENT_ANALYSIS_QUENE)
+        documentRegistration = DocumentRegistration.parse_raw(documentRegistrationJson)    
+        requestHeaders = {'Content-type': 'application/json', 'X_TOPOSOID_TRANSVERSAL_STATE': self.transversalState}                
+        response = self.client.post("/analyzePdfDocument" , json=jsonable_encoder(documentRegistration.document) , headers=requestHeaders) 
+        assert response.status_code == status.HTTP_200_OK
+        propositions = Propositions.parse_obj(response.json())
+        print(len(propositions.propositions))        
+    """
+    
+    def test_analyzePdfDocument(self):
+
+        with open("JAPANESE_DOCUMENT_FOR_TEST.pdf", "rb") as f:
+            response = self.client.post("/uploadDocumentFile", headers={"X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},files={"uploadfile": ("DOCUMENT_FOR_TEST.pdf", f, "application/pdf")})
+        assert response.status_code == status.HTTP_200_OK        
+        documentRegistrationJson = receiveMessage(TOPOSOID_MQ_DOCUMENT_ANALYSIS_QUENE)
+        documentRegistration = DocumentRegistration.parse_raw(documentRegistrationJson)    
+        requestHeaders = {'Content-type': 'application/json', 'X_TOPOSOID_TRANSVERSAL_STATE': self.transversalState}                
+        response = self.client.post("/analyzePdfDocument" , json=jsonable_encoder(documentRegistration.document) , headers=requestHeaders) 
+        assert response.status_code == status.HTTP_200_OK
+        propositions = Propositions.parse_obj(response.json())
+        documentAnalysisResultHistories = searchDocumentAnalysisResultHistoryByDocumentIdAndStateId(documentRegistration.document.documentId, ANALYSIS_COMPLETED, self.transversalState)
+        assert len(documentAnalysisResultHistories) == 1
+        assert documentAnalysisResultHistories[0].documentId == documentRegistration.document.documentId
+        assert documentAnalysisResultHistories[0].stateId == ANALYSIS_COMPLETED
+        assert documentAnalysisResultHistories[0].totalSeparatedNumber == len(propositions.propositions)
+        print("check")    
+
+
+    def test_propositionCount(self):        
+        documentId = str(uuid.uuid4())
+        propositionId1 = str(uuid.uuid4())
+        propositionId2 = str(uuid.uuid4())
+        propositionId3 = str(uuid.uuid4())
+        addDocumentAnalysisResultHistory(stateId = 5, documentId = documentId, originalFilename = "test.pdf", transversalStateJson = self.transversalState, totalSeparatedNumber=3)
+        addKnowledgeRegisterHistory(stateId = 1, documentId= documentId, sequentialNumber=1, propositionId=propositionId1, sentences="これはテスト1です。", json="{}", transversalStateJson=self.transversalState)
+        addKnowledgeRegisterHistory(stateId = 1, documentId= documentId, sequentialNumber=2, propositionId=propositionId2, sentences="これはテスト2です。", json="{}", transversalStateJson=self.transversalState)
+        addKnowledgeRegisterHistory(stateId = 1, documentId= documentId, sequentialNumber=3, propositionId=propositionId3, sentences="これはテスト3です。", json="{}", transversalStateJson=self.transversalState)
+        response = self.client.post("/getTotalPropositionCount",
+                    headers={"Content-Type": "application/json", "X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},
+                    json={"documentId":documentId, "count":0}
+        )
+        assert response.status_code == 200
+        knowledgeRegisterHistoryCount = KnowledgeRegisterHistoryCount.parse_obj(response.json())
+        assert knowledgeRegisterHistoryCount.count == 3
+
+        response = self.client.post("/getAnalyzedPropositionCount",
+                    headers={"Content-Type": "application/json", "X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},
+                    json={"documentId":documentId, "count":0}
+        )
+        assert response.status_code == 200
+        knowledgeRegisterHistoryCount = KnowledgeRegisterHistoryCount.parse_obj(response.json())
+        assert knowledgeRegisterHistoryCount.count == 3
+
+    def test_latestAnalyzedState(self):
+        documentId = str(uuid.uuid4())
+        addDocumentAnalysisResultHistory(stateId = 1, documentId = documentId, originalFilename = "test.pdf", transversalStateJson = self.transversalState, totalSeparatedNumber=3)
+        addDocumentAnalysisResultHistory(stateId = 2, documentId = documentId, originalFilename = "test.pdf", transversalStateJson = self.transversalState, totalSeparatedNumber=3)
+        addDocumentAnalysisResultHistory(stateId = 3, documentId = documentId, originalFilename = "test.pdf", transversalStateJson = self.transversalState, totalSeparatedNumber=3)
+
+        response = self.client.post("/getLatestDocumentAnalysisState",
+                    headers={"Content-Type": "application/json", "X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},
+                    json={"stateId":0, "documentId":documentId, "originalFilename": "", "totalSeparatedNumber":-1}
+        )
+        assert response.status_code == 200
+        documentAnalysisResultHistories = parse_obj_as(List[DocumentAnalysisResultHistoryRecord], response.json())
+        assert len(documentAnalysisResultHistories) == 1
+        assert documentAnalysisResultHistories[0].documentId == documentId
+        assert documentAnalysisResultHistories[0].stateId == 3
+
+    """
     def test_registImage(self): 
         
         response = self.client.post("/registImage",
@@ -186,87 +286,3 @@ class TestToposoidContentsAdminWeb(object):
         assert documentRegistration.document.documentId == document.documentId
 
     """
-    def test_analyzePdfDocument2(self):
-
-        with open("DOCUMENT1.pdf", "rb") as f:
-            response = self.client.post("/uploadDocumentFile", headers={"X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},files={"uploadfile": ("DOCUMENT1.pdf", f, "application/pdf")})
-        assert response.status_code == status.HTTP_200_OK        
-        documentRegistrationJson = receiveMessage(TOPOSOID_MQ_DOCUMENT_ANALYSIS_QUENE)
-        documentRegistration = DocumentRegistration.parse_raw(documentRegistrationJson)    
-        requestHeaders = {'Content-type': 'application/json', 'X_TOPOSOID_TRANSVERSAL_STATE': self.transversalState}                
-        response = self.client.post("/analyzePdfDocument" , json=jsonable_encoder(documentRegistration.document) , headers=requestHeaders) 
-        assert response.status_code == status.HTTP_200_OK
-        propositions = Propositions.parse_obj(response.json())
-        print(len(propositions.propositions))
-        with open("CONTRACT2.pdf", "rb") as f:
-            response = self.client.post("/uploadDocumentFile", headers={"X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},files={"uploadfile": ("CONTRACT2.pdf", f, "application/pdf")})
-        assert response.status_code == status.HTTP_200_OK        
-        documentRegistrationJson = receiveMessage(TOPOSOID_MQ_DOCUMENT_ANALYSIS_QUENE)
-        documentRegistration = DocumentRegistration.parse_raw(documentRegistrationJson)    
-        requestHeaders = {'Content-type': 'application/json', 'X_TOPOSOID_TRANSVERSAL_STATE': self.transversalState}                
-        response = self.client.post("/analyzePdfDocument" , json=jsonable_encoder(documentRegistration.document) , headers=requestHeaders) 
-        assert response.status_code == status.HTTP_200_OK
-        propositions = Propositions.parse_obj(response.json())
-        print(len(propositions.propositions))
-    """   
-        
-
-    def test_analyzePdfDocument(self):
-
-        with open("JAPANESE_DOCUMENT_FOR_TEST.pdf", "rb") as f:
-            response = self.client.post("/uploadDocumentFile", headers={"X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},files={"uploadfile": ("DOCUMENT_FOR_TEST.pdf", f, "application/pdf")})
-        assert response.status_code == status.HTTP_200_OK        
-        documentRegistrationJson = receiveMessage(TOPOSOID_MQ_DOCUMENT_ANALYSIS_QUENE)
-        documentRegistration = DocumentRegistration.parse_raw(documentRegistrationJson)    
-        requestHeaders = {'Content-type': 'application/json', 'X_TOPOSOID_TRANSVERSAL_STATE': self.transversalState}                
-        response = self.client.post("/analyzePdfDocument" , json=jsonable_encoder(documentRegistration.document) , headers=requestHeaders) 
-        assert response.status_code == status.HTTP_200_OK
-        propositions = Propositions.parse_obj(response.json())
-        documentAnalysisResultHistories = searchDocumentAnalysisResultHistoryByDocumentIdAndStateId(documentRegistration.document.documentId, ANALYSIS_COMPLETED, self.transversalState)
-        assert len(documentAnalysisResultHistories) == 1
-        assert documentAnalysisResultHistories[0].documentId == documentRegistration.document.documentId
-        assert documentAnalysisResultHistories[0].stateId == ANALYSIS_COMPLETED
-        assert documentAnalysisResultHistories[0].totalSeparatedNumber == len(propositions.propositions)
-        print("check")    
-
-
-    def test_propositionCount(self):        
-        documentId = str(uuid.uuid4())
-        propositionId1 = str(uuid.uuid4())
-        propositionId2 = str(uuid.uuid4())
-        propositionId3 = str(uuid.uuid4())
-        addDocumentAnalysisResultHistory(stateId = 5, documentId = documentId, originalFilename = "test.pdf", transversalStateJson = self.transversalState, totalSeparatedNumber=3)
-        addKnowledgeRegisterHistory(stateId = 1, documentId= documentId, sequentialNumber=1, propositionId=propositionId1, sentences="これはテスト1です。", json="{}", transversalStateJson=self.transversalState)
-        addKnowledgeRegisterHistory(stateId = 1, documentId= documentId, sequentialNumber=2, propositionId=propositionId2, sentences="これはテスト2です。", json="{}", transversalStateJson=self.transversalState)
-        addKnowledgeRegisterHistory(stateId = 1, documentId= documentId, sequentialNumber=3, propositionId=propositionId3, sentences="これはテスト3です。", json="{}", transversalStateJson=self.transversalState)
-        response = self.client.post("/getTotalPropositionCount",
-                    headers={"Content-Type": "application/json", "X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},
-                    json={"documentId":documentId, "count":0}
-        )
-        assert response.status_code == 200
-        knowledgeRegisterHistoryCount = KnowledgeRegisterHistoryCount.parse_obj(response.json())
-        assert knowledgeRegisterHistoryCount.count == 3
-
-        response = self.client.post("/getAnalyzedPropositionCount",
-                    headers={"Content-Type": "application/json", "X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},
-                    json={"documentId":documentId, "count":0}
-        )
-        assert response.status_code == 200
-        knowledgeRegisterHistoryCount = KnowledgeRegisterHistoryCount.parse_obj(response.json())
-        assert knowledgeRegisterHistoryCount.count == 3
-
-    def test_latestAnalyzedState(self):
-        documentId = str(uuid.uuid4())
-        addDocumentAnalysisResultHistory(stateId = 1, documentId = documentId, originalFilename = "test.pdf", transversalStateJson = self.transversalState, totalSeparatedNumber=3)
-        addDocumentAnalysisResultHistory(stateId = 2, documentId = documentId, originalFilename = "test.pdf", transversalStateJson = self.transversalState, totalSeparatedNumber=3)
-        addDocumentAnalysisResultHistory(stateId = 3, documentId = documentId, originalFilename = "test.pdf", transversalStateJson = self.transversalState, totalSeparatedNumber=3)
-
-        response = self.client.post("/getLatestDocumentAnalysisState",
-                    headers={"Content-Type": "application/json", "X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},
-                    json={"stateId":0, "documentId":documentId, "originalFilename": "", "totalSeparatedNumber":-1}
-        )
-        assert response.status_code == 200
-        documentAnalysisResultHistories = parse_obj_as(List[DocumentAnalysisResultHistoryRecord], response.json())
-        assert len(documentAnalysisResultHistories) == 1
-        assert documentAnalysisResultHistories[0].documentId == documentId
-        assert documentAnalysisResultHistories[0].stateId == 3
