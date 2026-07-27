@@ -22,6 +22,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from starlette.middleware.cors import CORSMiddleware
 from typing import Optional
+import cv2
 
 import os
 import traceback
@@ -78,7 +79,9 @@ def registerImage(knowledgeForImage:KnowledgeForImage, X_TOPOSOID_TRANSVERSAL_ST
     transversalState = TransversalState.parse_raw(X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
     try:                   
         #ファイルはknowledgeForImage.imageReference.reference.urlに保存されている前提
-        knowledgeForImage.imageReference.reference.url = save(knowledgeForImage.id, knowledgeForImage.imageReference.reference.url)
+        if not knowledgeForImage.imageReference.reference.isWholeSentence:
+            convetImageSize(knowledgeForImage)
+        knowledgeForImage.imageReference.reference.url = save(knowledgeForImage.id, knowledgeForImage.imageReference.reference.url, True)
         response = JSONResponse(content=jsonable_encoder(RegistImageContentResult(knowledgeForImage=knowledgeForImage, statusInfo=StatusInfo(status="OK", message="")) ))
         LOG.info(f"Saving image completed.[url:{knowledgeForImage.imageReference.reference.url}]", transversalState)
         return response
@@ -203,6 +206,17 @@ def save(featureId, url):
     newFilename = f"{featureId}.{target.split('.')[-1]}"
     shutil.move(target, f"contents/images/{newFilename}")
     return f"{os.environ['TOPOSOID_CONTENTS_URL']}contents/images/{newFilename}"
+
+def convetImageSize(knowledgeForImage:KnowledgeForImage):
+    target = knowledgeForImage.imageReference.reference.url.replace(os.environ["TOPOSOID_CONTENTS_URL"], "")
+    image = cv2.imread(target)
+    #イメージサイズが指定されていたら保存ファイルのサイズ変更をする。
+    x = knowledgeForImage.imageReference.x
+    y = knowledgeForImage.imageReference.y
+    w = knowledgeForImage.imageReference.width
+    h = knowledgeForImage.imageReference.height
+    #上書き
+    cv2.imwrite(target, image[y:y+h, x:x+w])
 
 
 """
