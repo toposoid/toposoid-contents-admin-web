@@ -17,7 +17,7 @@
 
 from fastapi import FastAPI, File, UploadFile, Header, Depends
 from ToposoidCommon.model import KnowledgeForImage, KnowledgeForTable, StatusInfo, TransversalState, Document, DocumentRegistration, KnowledgeRegisterHistoryCount, DocumentAnalysisResultHistoryRecord
-from model import RegistImageContentResult, RegistTableContentResult, UploadResult
+from model import RegistImageContentResult, RegistTableContentResult, RegistDocumentContentResult
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from starlette.middleware.cors import CORSMiddleware
@@ -71,6 +71,53 @@ async def transferFile(uploadfile: UploadFile = File(...), X_TOPOSOID_TRANSVERSA
     except Exception as e:
         LOG.error(traceback.format_exc(), transversalState)          
         return JSONResponse(content=jsonable_encoder(StatusInfo(status="ERROR", message=f"{e}")))
+
+@app.post("/registerImage",
+          summary='register image file')
+def registerImage(knowledgeForImage:KnowledgeForImage, X_TOPOSOID_TRANSVERSAL_STATE: Optional[str] = Header(None, convert_underscores=False)):
+    transversalState = TransversalState.parse_raw(X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
+    try:                   
+        #ファイルはknowledgeForImage.imageReference.reference.urlに保存されている前提
+        knowledgeForImage.imageReference.reference.url = save(knowledgeForImage.id, knowledgeForImage.imageReference.reference.url)
+        response = JSONResponse(content=jsonable_encoder(RegistImageContentResult(knowledgeForImage=knowledgeForImage, statusInfo=StatusInfo(status="OK", message="")) ))
+        LOG.info(f"Saving image completed.[url:{knowledgeForImage.imageReference.reference.url}]", transversalState)
+        return response
+    except Exception as e:
+        LOG.error(traceback.format_exc(), transversalState)
+        return JSONResponse(content=jsonable_encoder(RegistImageContentResult(knowledgeForImage=knowledgeForImage, statusInfo=StatusInfo(status="ERROR", message=traceback.format_exc()))))
+
+@app.post("/registerTable",
+          summary='register table file')
+def registerTable(knowledgeForTable:KnowledgeForTable, X_TOPOSOID_TRANSVERSAL_STATE: Optional[str] = Header(None, convert_underscores=False)):
+    transversalState = TransversalState.parse_raw(X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
+    try:                   
+        #ファイルはknowledgeForTable.tableReference.reference.urlに保存されている前提
+        knowledgeForTable.tableReference.reference.url = save(knowledgeForTable.id, knowledgeForTable.tableReference.reference.url)
+        response = JSONResponse(content=jsonable_encoder(RegistTableContentResult(knowledgeForTable=knowledgeForTable, statusInfo=StatusInfo(status="OK", message="")) ))
+        LOG.info(f"Saving table completed.[url:{knowledgeForTable.tableReference.reference.url}]", transversalState)
+        return response
+    except Exception as e:
+        LOG.error(traceback.format_exc(), transversalState)
+        return JSONResponse(content=jsonable_encoder(RegistTableContentResult(knowledgeForTable=knowledgeForTable, statusInfo=StatusInfo(status="ERROR", message=traceback.format_exc()))))
+
+
+@app.post("/registerDocument",
+          summary='register document file')
+def registerDocument(document: Document, X_TOPOSOID_TRANSVERSAL_STATE: Optional[str] = Header(None, convert_underscores=False)):
+    transversalState = TransversalState.parse_raw(X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
+    try:        
+        #ファイルはdocument.urlに保存されている前提
+        document.id = str(uuid.uuid1())
+        document.url = save(document.id, document.url)        
+        #Publish to document-analysis-subscriber. Register information in mysql instead of pushing unnecessary things to MQ
+        addDocumentAnalysisResultHistory(UPLOAD_COMPLETED, document.id, document.filename, X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))        
+        requestJson = str(jsonable_encoder(DocumentRegistration(document=document, transversalState=transversalState))).replace("'", "\"")
+        sendMessage(TOPOSOID_MQ_DOCUMENT_ANALYSIS_QUENE, requestJson)
+        LOG.info(f"Saving Document completed.[url:{document.url}]", transversalState)
+        return JSONResponse(content=jsonable_encoder(RegistDocumentContentResult(document=document, statusInfo=StatusInfo(status="OK", message=""))))
+    except Exception as e:
+        LOG.error(traceback.format_exc(), transversalState)
+        return JSONResponse(content=jsonable_encoder(RegistDocumentContentResult(document=document, statusInfo=StatusInfo(status="ERROR", message=traceback.format_exc()))))
 
 
 @app.post("/uploadDocumentFile")
@@ -143,6 +190,19 @@ def getLatestDocumentAnalysisState(documentAnalysisResultHistoryRecord:DocumentA
         return JSONResponse(content=jsonable_encoder(result))
     except Exception as e:
         LOG.error(traceback.format_exc(), transversalState)          
+
+
+
+def save(featureId, url):
+    #ファイルの存在を確認
+    target = url.replace(os.environ["TOPOSOID_CONTENTS_URL"], "")
+
+    if not os.path.exists(target):
+        raise Exception("The uploaded file does not exist.")
+    #公開URLを新規に確定する。featureIdは、所与の前提
+    newFilename = f"{featureId}.{target.split('.')[-1]}"
+    shutil.move(target, f"contents/images/{newFilename}")
+    return f"{os.environ['TOPOSOID_CONTENTS_URL']}contents/images/{newFilename}"
 
 
 """

@@ -21,17 +21,22 @@ from enum import Enum
 from fastapi import Form
 import json
 
-from ToposoidCommon.model import KnowledgeForImage, KnowledgeForTable, StatusInfo
+from ToposoidCommon.model import KnowledgeForImage, KnowledgeForTable, Document, StatusInfo
 
 class RegistImageContentResult(BaseModel):
     knowledgeForImage:KnowledgeForImage
     statusInfo:StatusInfo
     
-
 class RegistTableContentResult(BaseModel):
     knowledgeForTable:KnowledgeForTable
     statusInfo:StatusInfo
 
+class RegistDocumentContentResult(BaseModel):
+    document:Document
+    statusInfo:StatusInfo
+
+
+"""
 class TableFileType(Enum):
     NOT_APPLICABLE = 0
     TEXT = 1
@@ -55,3 +60,4 @@ class UploadResult(BaseModel):
         url: str = Form(...)
     ):
         return cls(featureType=featureType, url=url)    
+"""
