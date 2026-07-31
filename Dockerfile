@@ -17,14 +17,14 @@ RUN apt-get update && apt-get upgrade -y \
 && git fetch origin ${TARGET_BRANCH} \
 && git checkout ${TARGET_BRANCH} \
 && sed s/__##GIT_BRANCH##__/${TARGET_BRANCH}/g pyproject.toml.template > pyproject.toml \
-&& uv sync \
-&& uv add git+https://github.com/toposoid/toposoid-python-lib.git@${TARGET_BRANCH}#egg=ToposoidCommon \
 && cd /tmp \
 && git clone https://github.com/toposoid/toposoid-pdf-analyzer.git \
 && cd toposoid-pdf-analyzer \
 && git checkout ${TARGET_BRANCH} \
 && sed s/__##GIT_BRANCH##__/${TARGET_BRANCH}/g pyproject.toml.template > pyproject.toml \
 && cd /app/toposoid-contents-admin-web \
+&& uv sync \
+&& uv add git+https://github.com/toposoid/toposoid-python-lib.git@${TARGET_BRANCH}#egg=ToposoidCommon \
 && uv add /tmp/toposoid-pdf-analyzer --editable
 
 
