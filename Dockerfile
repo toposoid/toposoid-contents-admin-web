@@ -19,13 +19,13 @@ RUN apt-get update && apt-get upgrade -y \
 && sed s/__##GIT_BRANCH##__/${TARGET_BRANCH}/g pyproject.toml.template > pyproject.toml \
 && uv sync \
 && uv add git+https://github.com/toposoid/toposoid-python-lib.git@${TARGET_BRANCH}#egg=ToposoidCommon \
-&& cd /tmp/ \
+&& cd /tmp \
 && git clone https://github.com/toposoid/toposoid-pdf-analyzer.git \
 && cd toposoid-pdf-analyzer \
 && git checkout ${TARGET_BRANCH} \
 && sed s/__##GIT_BRANCH##__/${TARGET_BRANCH}/g pyproject.toml.template > pyproject.toml \
 && cd /app/toposoid-contents-admin-web \
-&& uv add --editable /tmp/toposoid-pdf-analyzer
+&& uv add /tmp/toposoid-pdf-analyzer --editable
 
 
 RUN echo "* * * * * root find /app/toposoid-contents-admin-web/contents/temporaryUse/* -name '*' -mmin +10 -delete" >> /etc/crontab \
