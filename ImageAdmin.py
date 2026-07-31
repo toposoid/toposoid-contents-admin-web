@@ -14,6 +14,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
+"""
 import requests
 import cv2
 from model import KnowledgeForImage
@@ -24,28 +25,6 @@ import time
 
 class ImageAdmin():
     def registImage(self, knowledgeForImage:KnowledgeForImage, isTemporaryUse = False):
-                
-        # 画像を取得
-        for attempt in range(3):
-            try:
-                header = {
-                    "Accept": "*/*",
-                    "Accept-Encoding": "gzip, deflate",
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36"
-                }
-                with requests.get(knowledgeForImage.imageReference.reference.originalUrlOrReference, stream=True,verify=False, headers=header, timeout=(10.0, 10.0)) as res:
-                    # 画像を一時的にファイルに保存
-                    with open('tmp/' + knowledgeForImage.id, "wb") as f:
-                        for chunk in res.iter_content(chunk_size=1024):
-                            if chunk:
-                                f.write(chunk)
-
-                break
-            except requests.exceptions.ChunkedEncodingError:
-                time.sleep(1)
-        
-        #TODO:check File
-        
         #with open('tmp/' + knowledgeForImage.id, 'wb') as f:
         #    f.write(response.content)
         
@@ -107,3 +86,4 @@ class ImageAdmin():
         #削除
         os.remove(filename)
         return os.environ["TOPOSOID_CONTENTS_URL"] + "temporaryUse/" + id + ".jpg"
+"""
