@@ -17,6 +17,7 @@
 
 from fastapi import FastAPI, File, UploadFile, Header, Depends
 from ToposoidCommon.model import KnowledgeForImage, KnowledgeForTable, StatusInfo, TransversalState, Document, DocumentRegistration, KnowledgeRegisterHistoryCount, DocumentAnalysisResultHistoryRecord
+from ToposoidCommon.constants import FeatureType
 from model import RegistImageContentResult, RegistTableContentResult, RegistDocumentContentResult
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
@@ -47,9 +48,6 @@ app = FastAPI(
     version="0.6-SNAPSHOT"
 )
 app.add_middleware(ErrorHandlingMiddleware)
-#imageAdmin = ImageAdmin()
-#tableAdmin = TableAdmin()
-#rawDataAdmin = RawDataAdmin()
 
 app.add_middleware(
     CORSMiddleware,
@@ -80,7 +78,7 @@ def registerImage(knowledgeForImage:KnowledgeForImage, X_TOPOSOID_TRANSVERSAL_ST
     try:                   
         #ファイルはknowledgeForImage.imageReference.reference.urlに保存されている前提
         if not knowledgeForImage.imageReference.reference.isWholeSentence:
-            convetImageSize(knowledgeForImage)
+            convertImageSize(knowledgeForImage)
         knowledgeForImage.imageReference.reference.url = save(knowledgeForImage.id, knowledgeForImage.imageReference.reference.url, True)
         response = JSONResponse(content=jsonable_encoder(RegistImageContentResult(knowledgeForImage=knowledgeForImage, statusInfo=StatusInfo(status="OK", message="")) ))
         LOG.info(f"Saving image completed.[url:{knowledgeForImage.imageReference.reference.url}]", transversalState)
@@ -111,9 +109,13 @@ def registerDocument(document: Document, X_TOPOSOID_TRANSVERSAL_STATE: Optional[
     try:        
         #ファイルはdocument.urlに保存されている前提
         document.id = str(uuid.uuid1())
-        document.url = save(document.id, document.url)        
+        document.url = save(document.id, document.url) 
+        filepath = document.url.replace(os.environ["TOPOSOID_CONTENTS_URL"], "")  
+        document.filename = f"{document.id}.{filepath.split('.')[-1]}"
+        document.size = os.path.getsize(filepath)
+
         #Publish to document-analysis-subscriber. Register information in mysql instead of pushing unnecessary things to MQ
-        addDocumentAnalysisResultHistory(UPLOAD_COMPLETED, document.id, document.filename, X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))        
+        addDocumentAnalysisResultHistory(UPLOAD_COMPLETED, document.id, document.filename, X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))                
         requestJson = str(jsonable_encoder(DocumentRegistration(document=document, transversalState=transversalState))).replace("'", "\"")
         sendMessage(TOPOSOID_MQ_DOCUMENT_ANALYSIS_QUENE, requestJson)
         LOG.info(f"Saving Document completed.[url:{document.url}]", transversalState)
@@ -204,10 +206,18 @@ def save(featureId, url):
         raise Exception("The uploaded file does not exist.")
     #公開URLを新規に確定する。featureIdは、所与の前提
     newFilename = f"{featureId}.{target.split('.')[-1]}"
-    shutil.move(target, f"contents/images/{newFilename}")
+    if featureId == FeatureType.IMAGE.value:
+        shutil.move(target, f"contents/images/{newFilename}")
+    elif featureId == FeatureType.TABLE.value:
+        shutil.move(target, f"contents/tables/{newFilename}")
+    elif featureId == FeatureType.DOCUMENT.value:
+        shutil.move(target, f"contents/documents/{newFilename}")
+    else:
+        raise Exception("There's something wrong with the featureId.")
+
     return f"{os.environ['TOPOSOID_CONTENTS_URL']}contents/images/{newFilename}"
 
-def convetImageSize(knowledgeForImage:KnowledgeForImage):
+def convertImageSize(knowledgeForImage:KnowledgeForImage):
     target = knowledgeForImage.imageReference.reference.url.replace(os.environ["TOPOSOID_CONTENTS_URL"], "")
     image = cv2.imread(target)
     #イメージサイズが指定されていたら保存ファイルのサイズ変更をする。
