@@ -17,7 +17,7 @@
 from fastapi.testclient import TestClient
 from fastapi import status
 from api import app
-from model import RegistDocumentContentResult
+from model import RegistDocumentContentResult, RegistImageContentResult, RegistTableContentResult
 from ToposoidCommon.model import TransversalState, Propositions, DocumentRegistration, Document, KnowledgeRegisterHistoryCount, DocumentAnalysisResultHistoryRecord, StatusInfo
 import numpy as np
 from time import sleep
@@ -54,8 +54,6 @@ class TestToposoidContentsAdminWeb(object):
         if os.path.isfile('contents/images/' + cls.id2 + ".jpeg"):    
             os.remove('contents/images/' + cls.id2 + ".jpeg")
 
-
-
     def test_transferFile(self):
         target = f"tmp/{str(uuid.uuid4())}.png"
         shutil.copy("IMG_TEST.png",target)
@@ -67,10 +65,64 @@ class TestToposoidContentsAdminWeb(object):
         assert(statusInfo.status == "OK")        
         assert(os.path.exists(f"contents/temporaryUse/{target.split('/')[-1]}"))
 
+    def test_registerImage(self):
+        featureId = str(uuid.uuid4())
+        target = f"contents/temporaryUse/{featureId}.jpg"
+        shutil.copy("IMAGE_TEST.jpg",target)
 
+        response = self.client.post("/registerImage",
+                            headers={"Content-Type": "application/json", "X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},
+                            json={
+                                "id": self.id1,
+                                "imageReference":{
+                                "reference": {
+                                    "url": f"{os.environ['TOPOSOID_CONTENTS_URL']}{target}",
+                                    "surface": "猫が",
+                                    "surfaceIndex": "0",
+                                    "isWholeSentence": False,
+                                    "originalUrlOrReference": "http://images.cocodataset.org/val2017/000000039769.jpg",
+                                    "metaInformations": []
+                                },
+                                "x": 27,
+                                "y": 41,
+                                "width": 287,
+                                "height": 435}
+                            })
+        assert response.status_code == 200
+        registImageContentResult = RegistImageContentResult.parse_obj(response.json())
+        assert registImageContentResult.statusInfo.status == "OK"        
+        assert os.path.exists(f"contents/images/{registImageContentResult.knowledgeForImage.id}.jpg")
 
+    """
+    def test_registerTable(self):
+        featureId = str(uuid.uuid4())
+        target = f"contents/temporaryUse/{featureId}.xlsx"
+        shutil.copy("TABLE_TEST.xlsx",target)
+
+        response = self.client.post("/registerTable",
+                            headers={"Content-Type": "application/json", "X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},
+                            json={
+                                "id": self.id1,
+                                "tableReference":{
+                                "reference": {
+                                    "url": f"{os.environ['TOPOSOID_CONTENTS_URL']}{target}",
+                                    "surface": "猫が",
+                                    "surfaceIndex": "0",
+                                    "isWholeSentence": False,
+                                    "originalUrlOrReference": "http://images.cocodataset.org/val2017/000000039769.jpg",
+                                    "metaInformations": []
+                                },
+                                "x": 27,
+                                "y": 41,
+                                "width": 287,
+                                "height": 435}
+                            })
+        assert response.status_code == 200
+        registTableContentResult = RegistTableContentResult.parse_obj(response.json())
+        assert registTableContentResult.statusInfo.status == "OK"        
+        assert os.path.exists(f"contents/tables/{registTableContentResult.knowledgeForTable.id}.jpg")
+    """
     def test_registerDocument(self):
-
         documentId = str(uuid.uuid4())
         target = f"contents/temporaryUse/{documentId}.pdf"
         shutil.copy("JAPANESE_DOCUMENT_FOR_TEST.pdf",target)
@@ -80,25 +132,14 @@ class TestToposoidContentsAdminWeb(object):
                                     headers={"Content-Type": "application/json", "X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},
                                     json=jsonable_encoder(document))
         assert response.status_code == status.HTTP_200_OK
-
         registDocumentContentResult = RegistDocumentContentResult.parse_obj(response.json())
-
-        #pprint.pprint(response)
-        """
-        document = Document.parse_obj(response.json())
-
-        assert document.filename == "JAPANESE_DOCUMENT_FOR_TEST.pdf"
-        assert os.path.exists('contents/documents/' + document.documentId + ".pdf" )
-        assert os.path.exists('contents/documents/' + document.documentId + "-" + document.filename )
-        documentAnalysisResultHistories = searchDocumentAnalysisResultHistoryByDocumentIdAndStateId(document.documentId, UPLOAD_COMPLETED, self.transversalState)
+        documentAnalysisResultHistories = searchDocumentAnalysisResultHistoryByDocumentIdAndStateId(registDocumentContentResult.document.documentId, UPLOAD_COMPLETED, self.transversalState)
         assert len(documentAnalysisResultHistories) == 1
-        assert documentAnalysisResultHistories[0].documentId == document.documentId
+        assert documentAnalysisResultHistories[0].documentId == registDocumentContentResult.document.documentId
         assert documentAnalysisResultHistories[0].stateId == UPLOAD_COMPLETED
-        documentRegistrationJson = receiveMessage(TOPOSOID_MQ_DOCUMENT_ANALYSIS_QUENE)
-        documentRegistration = DocumentRegistration.parse_raw(documentRegistrationJson)
-        assert documentRegistration.document.documentId == document.documentId
-        """
-
+        assert(registDocumentContentResult.statusInfo.status == "OK")
+        assert os.path.exists(f"contents/documents/{registDocumentContentResult.document.documentId}.pdf" )
+        
     """
     def test_analyzePdfDocument2(self):
 

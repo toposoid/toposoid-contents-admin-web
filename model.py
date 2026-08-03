@@ -35,29 +35,3 @@ class RegistDocumentContentResult(BaseModel):
     document:Document
     statusInfo:StatusInfo
 
-
-"""
-class TableFileType(Enum):
-    NOT_APPLICABLE = 0
-    TEXT = 1
-    EXCEL = 2
-    EXCEL_OLD = 3
-
-class UploadResult(BaseModel):
-    url: str 
-    @model_validator(mode="before")
-    @classmethod
-    def validate_to_json(cls, data: Any) -> Any:
-        if isinstance(data, str):
-            return json.loads(data)
-        return data
-
-    # 💡 フォームデータからこのモデルを生成するためのヘルパー関数を追加
-    @classmethod
-    def as_form(
-        cls,
-        featureType: int = Form(...),
-        url: str = Form(...)
-    ):
-        return cls(featureType=featureType, url=url)    
-"""

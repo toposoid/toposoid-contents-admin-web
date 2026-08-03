@@ -79,7 +79,7 @@ def registerImage(knowledgeForImage:KnowledgeForImage, X_TOPOSOID_TRANSVERSAL_ST
         #ファイルはknowledgeForImage.imageReference.reference.urlに保存されている前提
         if not knowledgeForImage.imageReference.reference.isWholeSentence:
             convertImageSize(knowledgeForImage)
-        knowledgeForImage.imageReference.reference.url = save(FeatureType.IMAGE, knowledgeForImage.id, knowledgeForImage.imageReference.reference.url, True)
+        knowledgeForImage.imageReference.reference.url = save(FeatureType.IMAGE, knowledgeForImage.id, knowledgeForImage.imageReference.reference.url)
         response = JSONResponse(content=jsonable_encoder(RegistImageContentResult(knowledgeForImage=knowledgeForImage, statusInfo=StatusInfo(status="OK", message="")) ))
         LOG.info(f"Saving image completed.[url:{knowledgeForImage.imageReference.reference.url}]", transversalState)
         return response
