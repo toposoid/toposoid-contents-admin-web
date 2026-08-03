@@ -79,7 +79,7 @@ def registerImage(knowledgeForImage:KnowledgeForImage, X_TOPOSOID_TRANSVERSAL_ST
         #ファイルはknowledgeForImage.imageReference.reference.urlに保存されている前提
         if not knowledgeForImage.imageReference.reference.isWholeSentence:
             convertImageSize(knowledgeForImage)
-        knowledgeForImage.imageReference.reference.url = save(knowledgeForImage.id, knowledgeForImage.imageReference.reference.url, True)
+        knowledgeForImage.imageReference.reference.url = save(FeatureType.IMAGE, knowledgeForImage.id, knowledgeForImage.imageReference.reference.url)
         response = JSONResponse(content=jsonable_encoder(RegistImageContentResult(knowledgeForImage=knowledgeForImage, statusInfo=StatusInfo(status="OK", message="")) ))
         LOG.info(f"Saving image completed.[url:{knowledgeForImage.imageReference.reference.url}]", transversalState)
         return response
@@ -93,7 +93,7 @@ def registerTable(knowledgeForTable:KnowledgeForTable, X_TOPOSOID_TRANSVERSAL_ST
     transversalState = TransversalState.parse_raw(X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
     try:                   
         #ファイルはknowledgeForTable.tableReference.reference.urlに保存されている前提
-        knowledgeForTable.tableReference.reference.url = save(knowledgeForTable.id, knowledgeForTable.tableReference.reference.url)
+        knowledgeForTable.tableReference.reference.url = save(FeatureType.TABLE, knowledgeForTable.id, knowledgeForTable.tableReference.reference.url)
         response = JSONResponse(content=jsonable_encoder(RegistTableContentResult(knowledgeForTable=knowledgeForTable, statusInfo=StatusInfo(status="OK", message="")) ))
         LOG.info(f"Saving table completed.[url:{knowledgeForTable.tableReference.reference.url}]", transversalState)
         return response
@@ -109,9 +109,9 @@ def registerDocument(document: Document, X_TOPOSOID_TRANSVERSAL_STATE: Optional[
     try:        
         #ファイルはdocument.urlに保存されている前提
         document.documentId = str(uuid.uuid1())
-        document.url = save(document.id, document.url) 
+        document.url = save(FeatureType.DOCUMENT, document.documentId, document.url) 
         filepath = document.url.replace(os.environ["TOPOSOID_CONTENTS_URL"], "")  
-        document.filename = f"{document.id}.{filepath.split('.')[-1]}"
+        document.filename = f"{document.documentId}.{filepath.split('.')[-1]}"
         document.size = os.path.getsize(filepath)
 
         #Publish to document-analysis-subscriber. Register information in mysql instead of pushing unnecessary things to MQ
@@ -198,7 +198,7 @@ def getLatestDocumentAnalysisState(documentAnalysisResultHistoryRecord:DocumentA
 
 
 
-def save(featureId, url):
+def save(featureType, featureId, url):
     #ファイルの存在を確認
     target = url.replace(os.environ["TOPOSOID_CONTENTS_URL"], "")
 
@@ -206,16 +206,19 @@ def save(featureId, url):
         raise Exception("The uploaded file does not exist.")
     #公開URLを新規に確定する。featureIdは、所与の前提
     newFilename = f"{featureId}.{target.split('.')[-1]}"
-    if featureId == FeatureType.IMAGE.value:
+    if featureType == FeatureType.IMAGE:
         shutil.move(target, f"contents/images/{newFilename}")
-    elif featureId == FeatureType.TABLE.value:
+        return f"{os.environ['TOPOSOID_CONTENTS_URL']}contents/images/{newFilename}"
+    elif featureType == FeatureType.TABLE:
         shutil.move(target, f"contents/tables/{newFilename}")
-    elif featureId == FeatureType.DOCUMENT.value:
+        return f"{os.environ['TOPOSOID_CONTENTS_URL']}contents/tables/{newFilename}"
+    elif featureType == FeatureType.DOCUMENT:
         shutil.move(target, f"contents/documents/{newFilename}")
+        return f"{os.environ['TOPOSOID_CONTENTS_URL']}contents/documents/{newFilename}"
     else:
         raise Exception("There's something wrong with the featureId.")
 
-    return f"{os.environ['TOPOSOID_CONTENTS_URL']}contents/images/{newFilename}"
+    
 
 def convertImageSize(knowledgeForImage:KnowledgeForImage):
     target = knowledgeForImage.imageReference.reference.url.replace(os.environ["TOPOSOID_CONTENTS_URL"], "")
