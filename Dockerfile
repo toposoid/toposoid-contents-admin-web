@@ -16,6 +16,7 @@ RUN apt-get update && apt-get upgrade -y \
 && cd toposoid-contents-admin-web \
 && git fetch origin ${TARGET_BRANCH} \
 && git checkout ${TARGET_BRANCH} \
+&& git pull \
 && sed s/__##GIT_BRANCH##__/${TARGET_BRANCH}/g pyproject.toml.template > pyproject.toml \
 && cd /tmp \
 && git clone https://github.com/toposoid/toposoid-pdf-analyzer.git \
