@@ -108,14 +108,14 @@ def registerDocument(document: Document, X_TOPOSOID_TRANSVERSAL_STATE: Optional[
     transversalState = TransversalState.parse_raw(X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
     try:        
         #ファイルはdocument.urlに保存されている前提
-        document.id = str(uuid.uuid1())
+        document.documentId = str(uuid.uuid1())
         document.url = save(document.id, document.url) 
         filepath = document.url.replace(os.environ["TOPOSOID_CONTENTS_URL"], "")  
         document.filename = f"{document.id}.{filepath.split('.')[-1]}"
         document.size = os.path.getsize(filepath)
 
         #Publish to document-analysis-subscriber. Register information in mysql instead of pushing unnecessary things to MQ
-        addDocumentAnalysisResultHistory(UPLOAD_COMPLETED, document.id, document.filename, X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))                
+        addDocumentAnalysisResultHistory(UPLOAD_COMPLETED, document.documentId, document.filename, X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))                
         requestJson = str(jsonable_encoder(DocumentRegistration(document=document, transversalState=transversalState))).replace("'", "\"")
         sendMessage(TOPOSOID_MQ_DOCUMENT_ANALYSIS_QUENE, requestJson)
         LOG.info(f"Saving Document completed.[url:{document.url}]", transversalState)
