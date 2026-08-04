@@ -110,7 +110,7 @@ def registerDocument(document: Document, X_TOPOSOID_TRANSVERSAL_STATE: Optional[
         #ファイルはdocument.urlに保存されている前提
         document.documentId = str(uuid.uuid1())
         document.url = save(FeatureType.DOCUMENT, document.documentId, document.url) 
-        filepath = document.url.replace(os.environ["TOPOSOID_CONTENTS_URL"], "")  
+        filepath = "contents/" + document.url.replace(os.environ["TOPOSOID_CONTENTS_URL"], "")  
         document.filename = f"{document.documentId}.{filepath.split('.')[-1]}"
         document.size = os.path.getsize(filepath)
 
@@ -200,7 +200,7 @@ def getLatestDocumentAnalysisState(documentAnalysisResultHistoryRecord:DocumentA
 
 def save(featureType, featureId, url):
     #ファイルの存在を確認
-    target = url.replace(os.environ["TOPOSOID_CONTENTS_URL"], "")
+    target = "contents/" + url.replace(os.environ["TOPOSOID_CONTENTS_URL"], "")
 
     if not os.path.exists(target):
         raise Exception(f"The uploaded file does not exist. {target}")
@@ -208,20 +208,20 @@ def save(featureType, featureId, url):
     newFilename = f"{featureId}.{target.split('.')[-1]}"
     if featureType == FeatureType.IMAGE:
         shutil.move(target, f"contents/images/{newFilename}")
-        return f"{os.environ['TOPOSOID_CONTENTS_URL']}contents/images/{newFilename}"
+        return f"{os.environ['TOPOSOID_CONTENTS_URL']}images/{newFilename}"
     elif featureType == FeatureType.TABLE:
         shutil.move(target, f"contents/tables/{newFilename}")
-        return f"{os.environ['TOPOSOID_CONTENTS_URL']}contents/tables/{newFilename}"
+        return f"{os.environ['TOPOSOID_CONTENTS_URL']}tables/{newFilename}"
     elif featureType == FeatureType.DOCUMENT:
         shutil.move(target, f"contents/documents/{newFilename}")
-        return f"{os.environ['TOPOSOID_CONTENTS_URL']}contents/documents/{newFilename}"
+        return f"{os.environ['TOPOSOID_CONTENTS_URL']}documents/{newFilename}"
     else:
         raise Exception("There's something wrong with the featureId.")
 
     
 
 def convertImageSize(knowledgeForImage:KnowledgeForImage):
-    target = knowledgeForImage.imageReference.reference.url.replace(os.environ["TOPOSOID_CONTENTS_URL"], "")
+    target = "contents/" +knowledgeForImage.imageReference.reference.url.replace(os.environ["TOPOSOID_CONTENTS_URL"], "")
     image = cv2.imread(target)
     #イメージサイズが指定されていたら保存ファイルのサイズ変更をする。
     x = knowledgeForImage.imageReference.x

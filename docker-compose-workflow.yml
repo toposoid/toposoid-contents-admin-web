@@ -4,7 +4,7 @@ services:
     image: toposoid-contents-admin-web:0.7-SNAPSHOT
     tty: true
     environment:
-      - TOPOSOID_CONTENTS_URL=http://toposoid-contents-admin-web:9012/
+      - TOPOSOID_CONTENTS_URL=http://toposoid-contents-admin-web:9012/contents/
       - TOPOSOID_RDB_WEB_HOST=data-accessor-mysql-web
       - TOPOSOID_RDB_WEB_PORT=9016
       - TOPOSOID_MQ_HOST=elasticmq

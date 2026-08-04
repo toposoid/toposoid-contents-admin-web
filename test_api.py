@@ -76,7 +76,7 @@ class TestToposoidContentsAdminWeb(object):
                                 "id": self.id1,
                                 "imageReference":{
                                 "reference": {
-                                    "url": f"{os.environ['TOPOSOID_CONTENTS_URL']}{target}",
+                                    "url": f"{os.environ['TOPOSOID_CONTENTS_URL']}temporaryUse/{featureId}.jpg",
                                     "surface": "猫が",
                                     "surfaceIndex": "0",
                                     "isWholeSentence": False,
@@ -105,7 +105,7 @@ class TestToposoidContentsAdminWeb(object):
                                 "id": featureId,
                                 "tableReference":{
                                 "reference": {
-                                    "url": f"{os.environ['TOPOSOID_CONTENTS_URL']}{target}",
+                                    "url": f"{os.environ['TOPOSOID_CONTENTS_URL']}temporaryUse/{featureId}.xlsx",
                                     "surface": "データが",
                                     "surfaceIndex": "0",
                                     "isWholeSentence": False,
@@ -127,7 +127,7 @@ class TestToposoidContentsAdminWeb(object):
         documentId = str(uuid.uuid4())
         target = f"contents/temporaryUse/{documentId}.pdf"
         shutil.copy("JAPANESE_DOCUMENT_FOR_TEST.pdf",target)
-        document = Document(documentId = "", filename = "", url=f"{os.environ['TOPOSOID_CONTENTS_URL']}{target}", size=0)
+        document = Document(documentId = "", filename = "", url=f"{os.environ['TOPOSOID_CONTENTS_URL']}temporaryUse/{documentId}.pdf", size=0)
         
         response = self.client.post("/registerDocument", 
                                     headers={"Content-Type": "application/json", "X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},
