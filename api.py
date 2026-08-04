@@ -203,7 +203,7 @@ def save(featureType, featureId, url):
     target = url.replace(os.environ["TOPOSOID_CONTENTS_URL"], "")
 
     if not os.path.exists(target):
-        raise Exception("The uploaded file does not exist.")
+        raise Exception(f"The uploaded file does not exist. {target}")
     #公開URLを新規に確定する。featureIdは、所与の前提
     newFilename = f"{featureId}.{target.split('.')[-1]}"
     if featureType == FeatureType.IMAGE:
