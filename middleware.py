@@ -21,18 +21,26 @@ from starlette.middleware.base import BaseHTTPMiddleware
 import traceback
 from model import StatusInfo
 from fastapi.encoders import jsonable_encoder
-import logging
-LOG = logging.getLogger(__name__)
+from ToposoidCommon.model import StatusInfo, TransversalState
+import ToposoidCommon as tc
+LOG = tc.LogUtils(__name__)
 
 class ErrorHandlingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:
+        header_value = request.headers.get("X_TOPOSOID_TRANSVERSAL_STATE") or request.headers.get("X-TOPOSOID-TRANSVERSAL-STATE") or ""
         try:
+            if header_value:
+                transversalState = TransversalState.parse_raw(header_value.replace("'", "\""))
+            else:
+                raise Exception("An invalid TransversalState was detected.")                           
             response: Response = await call_next(request)
             if response.status_code != 200:
-                LOG.error(traceback.format_exc())
-                response = JSONResponse(content=jsonable_encoder(StatusInfo(status="ERROR", message=traceback.format_exc())))
+                LOG.error(f"StatusCode:{response.status_code}", transversalState)
+                response = JSONResponse(content=jsonable_encoder(StatusInfo(status="ERROR", message=f"StatusCode:{response.status_code}")), status_code=response.status_code)
         except Exception as e:
-            LOG.error(traceback.format_exc())
-            response = JSONResponse(content=jsonable_encoder(StatusInfo(status="ERROR", message=traceback.format_exc())))
+            ambiguousTransversalState = TransversalState(userId="ambiguous", username="", roleId=0, csrfToken = "")
+            LOG.error(e, ambiguousTransversalState)
+            LOG.error(traceback.format_exc(), ambiguousTransversalState)
+            response = JSONResponse(content=jsonable_encoder(StatusInfo(status="ERROR", message=traceback.format_exc())),status_code=500)
 
         return response
