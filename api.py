@@ -27,9 +27,6 @@ import cv2
 
 import os
 import traceback
-#from ImageAdmin import ImageAdmin
-#from TableAdmin import TableAdmin
-#from RawDataAdmin import RawDataAdmin
 from middleware import ErrorHandlingMiddleware
 from fastapi.staticfiles import StaticFiles
 import shutil
@@ -38,7 +35,8 @@ import ToposoidCommon as tc
 from ToposoidPdfAnalyzer import Pdf2Knowledge
 from ElasiticMQUtils import sendMessage
 from RdbUtils import addDocumentAnalysisResultHistory, getKnowledgeRegisterHistoryTotalCountByDocumentId, getKnowledgeRegisterHistoryCountByDocumentId, searchLatestDocumentAnalysisStateByDocumentId, UPLOAD_COMPLETED, ANALYSIS_COMPLETED
-
+import glob
+from pathlib import Path
 
 LOG = tc.LogUtils(__name__)
 TOPOSOID_MQ_DOCUMENT_ANALYSIS_QUENE = os.environ["TOPOSOID_MQ_DOCUMENT_ANALYSIS_QUENE"]
@@ -79,7 +77,8 @@ def registerImage(knowledgeForImage:KnowledgeForImage, X_TOPOSOID_TRANSVERSAL_ST
         #ファイルはknowledgeForImage.imageReference.reference.urlに保存されている前提
         if not knowledgeForImage.imageReference.reference.isWholeSentence:
             convertImageSize(knowledgeForImage)
-        knowledgeForImage.imageReference.reference.url = save(FeatureType.IMAGE, knowledgeForImage.id, knowledgeForImage.imageReference.reference.url)
+        target = "contents/" + knowledgeForImage.imageReference.reference.url.replace(os.environ["TOPOSOID_CONTENTS_URL"], "")
+        knowledgeForImage.imageReference.reference.url = save(FeatureType.IMAGE, knowledgeForImage.id, target)
         response = JSONResponse(content=jsonable_encoder(RegistImageContentResult(knowledgeForImage=knowledgeForImage, statusInfo=StatusInfo(status="OK", message="")) ))
         LOG.info(f"Saving image completed.[url:{knowledgeForImage.imageReference.reference.url}]", transversalState)
         return response
@@ -93,7 +92,8 @@ def registerTable(knowledgeForTable:KnowledgeForTable, X_TOPOSOID_TRANSVERSAL_ST
     transversalState = TransversalState.parse_raw(X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
     try:                   
         #ファイルはknowledgeForTable.tableReference.reference.urlに保存されている前提
-        knowledgeForTable.tableReference.reference.url = save(FeatureType.TABLE, knowledgeForTable.id, knowledgeForTable.tableReference.reference.url)
+        target = "contents/" + knowledgeForTable.tableReference.reference.url.replace(os.environ["TOPOSOID_CONTENTS_URL"], "")
+        knowledgeForTable.tableReference.reference.url = save(FeatureType.TABLE, knowledgeForTable.id, target)
         response = JSONResponse(content=jsonable_encoder(RegistTableContentResult(knowledgeForTable=knowledgeForTable, statusInfo=StatusInfo(status="OK", message="")) ))
         LOG.info(f"Saving table completed.[url:{knowledgeForTable.tableReference.reference.url}]", transversalState)
         return response
@@ -109,11 +109,18 @@ def registerDocument(document: Document, X_TOPOSOID_TRANSVERSAL_STATE: Optional[
     try:        
         #ファイルはdocument.urlに保存されている前提
         document.documentId = str(uuid.uuid1())
-        document.url = save(FeatureType.DOCUMENT, document.documentId, document.url) 
-        filepath = "contents/" + document.url.replace(os.environ["TOPOSOID_CONTENTS_URL"], "")  
-        document.filename = f"{document.documentId}.{filepath.split('.')[-1]}"
-        document.size = os.path.getsize(filepath)
-
+        target = "contents/" + document.url.replace(os.environ["TOPOSOID_CONTENTS_URL"], "")
+        originalFilename = getOriginalFilename(target)
+        document.size = os.path.getsize(target)
+        document.url = save(FeatureType.DOCUMENT, document.documentId, target) 
+        #filepath = "contents/" + document.url.replace(os.environ["TOPOSOID_CONTENTS_URL"], "")  
+        #document.filename = f"{document.documentId}.{filepath.split('.')[-1]}"        
+        if getOriginalFilename == "":
+            #TODO:もしURLからドキュメントを取得することがあればそのURLを設定する？
+            document.filename = ""
+        else:
+            document.filename = originalFilename        
+        
         #Publish to document-analysis-subscriber. Register information in mysql instead of pushing unnecessary things to MQ
         addDocumentAnalysisResultHistory(UPLOAD_COMPLETED, document.documentId, document.filename, X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))                
         requestJson = str(jsonable_encoder(DocumentRegistration(document=document, transversalState=transversalState))).replace("'", "\"")
@@ -198,27 +205,46 @@ def getLatestDocumentAnalysisState(documentAnalysisResultHistoryRecord:DocumentA
 
 
 
-def save(featureType, featureId, url):
-    #ファイルの存在を確認
-    target = "contents/" + url.replace(os.environ["TOPOSOID_CONTENTS_URL"], "")
-
+def save(featureType, featureId, target):
+    #ファイルの存在を確認    
     if not os.path.exists(target):
         raise Exception(f"The uploaded file does not exist. {target}")
+
+    #オリジナルファイルの特定
+    oldFeatureId = Path(target).stem
+    originalFilename = getOriginalFilename(target)
+    newOriginalFilename = f"{featureId}#{originalFilename}"
+
     #公開URLを新規に確定する。featureIdは、所与の前提
     newFilename = f"{featureId}.{target.split('.')[-1]}"
     if featureType == FeatureType.IMAGE:
+        shutil.move(f"contents/temporaryUse/{oldFeatureId}#{originalFilename}",f"contents/images/{newOriginalFilename}")
         shutil.move(target, f"contents/images/{newFilename}")
         return f"{os.environ['TOPOSOID_CONTENTS_URL']}images/{newFilename}"
     elif featureType == FeatureType.TABLE:
+        shutil.move(f"contents/temporaryUse/{oldFeatureId}#{originalFilename}",f"contents/tables/{newOriginalFilename}")
         shutil.move(target, f"contents/tables/{newFilename}")
         return f"{os.environ['TOPOSOID_CONTENTS_URL']}tables/{newFilename}"
     elif featureType == FeatureType.DOCUMENT:
+        shutil.move(f"contents/temporaryUse/{oldFeatureId}#{originalFilename}",f"contents/documents/{newOriginalFilename}")
         shutil.move(target, f"contents/documents/{newFilename}")
         return f"{os.environ['TOPOSOID_CONTENTS_URL']}documents/{newFilename}"
     else:
         raise Exception("There's something wrong with the featureId.")
 
-    
+
+def getOriginalFilename(filepath):
+    #拡張子を取り除いたパス
+    filePath = Path(filepath)
+    #オリジナルファイルとセットで二つあるか
+    filelist = glob.glob(f"{filePath.parent}/{filePath.stem}*")
+    if not len(filelist) ==  2:
+        raise Exception(f"The number of uploaded files is not two. {filelist}")
+    originalfile = list(filter(lambda x: "#" in  x, filelist))
+    if not len(originalfile) == 1:
+        raise Exception(f"The original file does not exist. {filelist}")
+    return originalfile[0].split('#')[1]
+
 
 def convertImageSize(knowledgeForImage:KnowledgeForImage):
     target = "contents/" +knowledgeForImage.imageReference.reference.url.replace(os.environ["TOPOSOID_CONTENTS_URL"], "")
