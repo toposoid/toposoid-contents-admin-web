@@ -213,20 +213,20 @@ def save(featureType, featureId, target):
     #オリジナルファイルの特定
     oldFeatureId = Path(target).stem
     originalFilename = getOriginalFilename(target)
-    newOriginalFilename = f"{featureId}#{originalFilename}"
+    newOriginalFilename = f"{featureId}!{originalFilename}"
 
     #公開URLを新規に確定する。featureIdは、所与の前提
     newFilename = f"{featureId}.{target.split('.')[-1]}"
     if featureType == FeatureType.IMAGE:
-        shutil.move(f"contents/temporaryUse/{oldFeatureId}#{originalFilename}",f"contents/images/{newOriginalFilename}")
+        shutil.move(f"contents/temporaryUse/{oldFeatureId}!{originalFilename}",f"contents/images/{newOriginalFilename}")
         shutil.move(target, f"contents/images/{newFilename}")
         return f"{os.environ['TOPOSOID_CONTENTS_URL']}images/{newFilename}"
     elif featureType == FeatureType.TABLE:
-        shutil.move(f"contents/temporaryUse/{oldFeatureId}#{originalFilename}",f"contents/tables/{newOriginalFilename}")
+        shutil.move(f"contents/temporaryUse/{oldFeatureId}!{originalFilename}",f"contents/tables/{newOriginalFilename}")
         shutil.move(target, f"contents/tables/{newFilename}")
         return f"{os.environ['TOPOSOID_CONTENTS_URL']}tables/{newFilename}"
     elif featureType == FeatureType.DOCUMENT:
-        shutil.move(f"contents/temporaryUse/{oldFeatureId}#{originalFilename}",f"contents/documents/{newOriginalFilename}")
+        shutil.move(f"contents/temporaryUse/{oldFeatureId}!{originalFilename}",f"contents/documents/{newOriginalFilename}")
         shutil.move(target, f"contents/documents/{newFilename}")
         return f"{os.environ['TOPOSOID_CONTENTS_URL']}documents/{newFilename}"
     else:
@@ -240,10 +240,10 @@ def getOriginalFilename(filepath):
     filelist = glob.glob(f"{filePath.parent}/{filePath.stem}*")
     if not len(filelist) ==  2:
         raise Exception(f"The number of uploaded files is not two. {filelist}")
-    originalfile = list(filter(lambda x: "#" in  x, filelist))
+    originalfile = list(filter(lambda x: "!" in  x, filelist))
     if not len(originalfile) == 1:
         raise Exception(f"The original file does not exist. {filelist}")
-    return originalfile[0].split('#')[1]
+    return originalfile[0].partition('!')[2]
 
 
 def convertImageSize(knowledgeForImage:KnowledgeForImage):
