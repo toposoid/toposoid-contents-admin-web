@@ -69,7 +69,7 @@ class TestToposoidContentsAdminWeb(object):
         featureId = str(uuid.uuid4())
         target = f"contents/temporaryUse/{featureId}.jpg"        
         shutil.copy("IMAGE_TEST.jpg",target)
-        shutil.copy("IMAGE_TEST.jpg",f"contents/temporaryUse/{featureId}#IMAGE_TEST.jpg" )
+        shutil.copy("IMAGE_TEST.jpg",f"contents/temporaryUse/{featureId}!IMAGE_TEST.jpg" )
 
         response = self.client.post("/registerImage",
                             headers={"Content-Type": "application/json", "X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},
@@ -99,7 +99,7 @@ class TestToposoidContentsAdminWeb(object):
         featureId = str(uuid.uuid4())
         target = f"contents/temporaryUse/{featureId}.xlsx"
         shutil.copy("TABLE_TEST.xlsx",target)
-        shutil.copy("TABLE_TEST.xlsx",f"contents/temporaryUse/{featureId}#TABLE_TEST.xlsx" )
+        shutil.copy("TABLE_TEST.xlsx",f"contents/temporaryUse/{featureId}!TABLE_TEST.xlsx" )
 
         response = self.client.post("/registerTable",
                             headers={"Content-Type": "application/json", "X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},
@@ -129,7 +129,7 @@ class TestToposoidContentsAdminWeb(object):
         documentId = str(uuid.uuid4())
         target = f"contents/temporaryUse/{documentId}.pdf"
         shutil.copy("JAPANESE_DOCUMENT_FOR_TEST.pdf",target)
-        shutil.copy("JAPANESE_DOCUMENT_FOR_TEST.pdf",f"contents/temporaryUse/{documentId}#JAPANESE_DOCUMENT_FOR_TEST.pdf" )
+        shutil.copy("JAPANESE_DOCUMENT_FOR_TEST.pdf",f"contents/temporaryUse/{documentId}!JAPANESE_DOCUMENT_FOR_TEST.pdf" )
         
         document = Document(documentId = "", filename = "", url=f"{os.environ['TOPOSOID_CONTENTS_URL']}temporaryUse/{documentId}.pdf", size=0)
         
