@@ -17,8 +17,7 @@
 from fastapi.testclient import TestClient
 from fastapi import status
 from api import app
-from model import RegistDocumentContentResult, RegistImageContentResult, RegistTableContentResult
-from ToposoidCommon.model import TransversalState, Propositions, DocumentRegistration, Document, KnowledgeRegisterHistoryCount, DocumentAnalysisResultHistoryRecord, StatusInfo
+from ToposoidCommon.model import TransversalState, Propositions, DocumentRegistration, Document, KnowledgeRegisterHistoryCount, DocumentAnalysisResultHistoryRecord, StatusInfo, RegisteredImageContentResult, RegisteredTableContentResult, RegisteredDocumentContentResult
 import numpy as np
 from time import sleep
 import pytest
@@ -90,7 +89,7 @@ class TestToposoidContentsAdminWeb(object):
                                 "height": 435}
                             })
         assert response.status_code == 200
-        registImageContentResult = RegistImageContentResult.parse_obj(response.json())
+        registImageContentResult = RegisteredImageContentResult.parse_obj(response.json())
         assert registImageContentResult.statusInfo.status == "OK"        
         assert os.path.exists(f"contents/images/{registImageContentResult.knowledgeForImage.id}.jpg")
 
@@ -121,7 +120,7 @@ class TestToposoidContentsAdminWeb(object):
                                 }
                             })
         assert response.status_code == 200
-        registTableContentResult = RegistTableContentResult.parse_obj(response.json())
+        registTableContentResult = RegisteredTableContentResult.parse_obj(response.json())
         assert registTableContentResult.statusInfo.status == "OK"        
         assert os.path.exists(f"contents/tables/{registTableContentResult.knowledgeForTable.id}.xlsx")
     
@@ -137,7 +136,7 @@ class TestToposoidContentsAdminWeb(object):
                                     headers={"Content-Type": "application/json", "X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},
                                     json=jsonable_encoder(document))
         assert response.status_code == status.HTTP_200_OK
-        registDocumentContentResult = RegistDocumentContentResult.parse_obj(response.json())
+        registDocumentContentResult = RegisteredDocumentContentResult.parse_obj(response.json())
         documentAnalysisResultHistories = searchDocumentAnalysisResultHistoryByDocumentIdAndStateId(registDocumentContentResult.document.documentId, UPLOAD_COMPLETED, self.transversalState)
         assert len(documentAnalysisResultHistories) == 1
         assert documentAnalysisResultHistories[0].documentId == registDocumentContentResult.document.documentId

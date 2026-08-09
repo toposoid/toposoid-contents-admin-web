@@ -19,7 +19,6 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 import traceback
-from model import StatusInfo
 from fastapi.encoders import jsonable_encoder
 from ToposoidCommon.model import StatusInfo, TransversalState
 import ToposoidCommon as tc
