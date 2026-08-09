@@ -16,9 +16,8 @@
 
 
 from fastapi import FastAPI, File, UploadFile, Header, Depends
-from ToposoidCommon.model import KnowledgeForImage, KnowledgeForTable, StatusInfo, TransversalState, Document, DocumentRegistration, KnowledgeRegisterHistoryCount, DocumentAnalysisResultHistoryRecord
+from ToposoidCommon.model import KnowledgeForImage, KnowledgeForTable, StatusInfo, TransversalState, Document, DocumentRegistration, KnowledgeRegisterHistoryCount, DocumentAnalysisResultHistoryRecord, RegisteredImageContentResult, RegisteredTableContentResult, RegisteredDocumentContentResult
 from ToposoidCommon.constants import FeatureType
-from model import RegistImageContentResult, RegistTableContentResult, RegistDocumentContentResult
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from starlette.middleware.cors import CORSMiddleware
@@ -79,12 +78,12 @@ def registerImage(knowledgeForImage:KnowledgeForImage, X_TOPOSOID_TRANSVERSAL_ST
             convertImageSize(knowledgeForImage)
         target = "contents/" + knowledgeForImage.imageReference.reference.url.replace(os.environ["TOPOSOID_CONTENTS_URL"], "")
         knowledgeForImage.imageReference.reference.url = save(FeatureType.IMAGE, knowledgeForImage.id, target)
-        response = JSONResponse(content=jsonable_encoder(RegistImageContentResult(knowledgeForImage=knowledgeForImage, statusInfo=StatusInfo(status="OK", message="")) ))
+        response = JSONResponse(content=jsonable_encoder(RegisteredImageContentResult(knowledgeForImage=knowledgeForImage, statusInfo=StatusInfo(status="OK", message="")) ))
         LOG.info(f"Saving image completed.[url:{knowledgeForImage.imageReference.reference.url}]", transversalState)
         return response
     except Exception as e:
         LOG.error(traceback.format_exc(), transversalState)
-        return JSONResponse(content=jsonable_encoder(RegistImageContentResult(knowledgeForImage=knowledgeForImage, statusInfo=StatusInfo(status="ERROR", message=traceback.format_exc()))))
+        return JSONResponse(content=jsonable_encoder(RegisteredImageContentResult(knowledgeForImage=knowledgeForImage, statusInfo=StatusInfo(status="ERROR", message=traceback.format_exc()))))
 
 @app.post("/registerTable",
           summary='register table file')
@@ -94,12 +93,12 @@ def registerTable(knowledgeForTable:KnowledgeForTable, X_TOPOSOID_TRANSVERSAL_ST
         #ファイルはknowledgeForTable.tableReference.reference.urlに保存されている前提
         target = "contents/" + knowledgeForTable.tableReference.reference.url.replace(os.environ["TOPOSOID_CONTENTS_URL"], "")
         knowledgeForTable.tableReference.reference.url = save(FeatureType.TABLE, knowledgeForTable.id, target)
-        response = JSONResponse(content=jsonable_encoder(RegistTableContentResult(knowledgeForTable=knowledgeForTable, statusInfo=StatusInfo(status="OK", message="")) ))
+        response = JSONResponse(content=jsonable_encoder(RegisteredTableContentResult(knowledgeForTable=knowledgeForTable, statusInfo=StatusInfo(status="OK", message="")) ))
         LOG.info(f"Saving table completed.[url:{knowledgeForTable.tableReference.reference.url}]", transversalState)
         return response
     except Exception as e:
         LOG.error(traceback.format_exc(), transversalState)
-        return JSONResponse(content=jsonable_encoder(RegistTableContentResult(knowledgeForTable=knowledgeForTable, statusInfo=StatusInfo(status="ERROR", message=traceback.format_exc()))))
+        return JSONResponse(content=jsonable_encoder(RegisteredTableContentResult(knowledgeForTable=knowledgeForTable, statusInfo=StatusInfo(status="ERROR", message=traceback.format_exc()))))
 
 
 @app.post("/registerDocument",
@@ -126,10 +125,10 @@ def registerDocument(document: Document, X_TOPOSOID_TRANSVERSAL_STATE: Optional[
         requestJson = str(jsonable_encoder(DocumentRegistration(document=document, transversalState=transversalState))).replace("'", "\"")
         sendMessage(TOPOSOID_MQ_DOCUMENT_ANALYSIS_QUENE, requestJson)
         LOG.info(f"Saving Document completed.[url:{document.url}]", transversalState)
-        return JSONResponse(content=jsonable_encoder(RegistDocumentContentResult(document=document, statusInfo=StatusInfo(status="OK", message=""))))
+        return JSONResponse(content=jsonable_encoder(RegisteredDocumentContentResult(document=document, statusInfo=StatusInfo(status="OK", message=""))))
     except Exception as e:
         LOG.error(traceback.format_exc(), transversalState)
-        return JSONResponse(content=jsonable_encoder(RegistDocumentContentResult(document=document, statusInfo=StatusInfo(status="ERROR", message=traceback.format_exc()))))
+        return JSONResponse(content=jsonable_encoder(RegisteredDocumentContentResult(document=document, statusInfo=StatusInfo(status="ERROR", message=traceback.format_exc()))))
 
 
 @app.post("/uploadDocumentFile")
