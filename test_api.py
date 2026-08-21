@@ -123,7 +123,7 @@ class TestToposoidContentsAdminWeb(object):
         registTableContentResult = RegisteredTableContentResult.parse_obj(response.json())
         assert registTableContentResult.statusInfo.status == "OK"        
         assert os.path.exists(f"contents/tables/{registTableContentResult.knowledgeForTable.id}.tsv")
-        assert os.path.exists(f"contents/tables/{registTableContentResult.knowledgeForTable.id}.pickle")
+        assert os.path.exists(f"contents/tables/{registTableContentResult.knowledgeForTable.id}.parquet")
     
     def test_registerDocument(self):
         documentId = str(uuid.uuid4())

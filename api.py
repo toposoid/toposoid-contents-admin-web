@@ -227,12 +227,12 @@ def save(featureType, featureId, target):
         shutil.move(target, f"contents/images/{newFilename}")
         return f"{os.environ['TOPOSOID_CONTENTS_URL']}images/{newFilename}"
     elif featureType == FeatureType.TABLE:
-        pickleTarget = ".".join(list(target.split('.'))[:-1]) + ".pickle"
-        newPickleFilename = f"{featureId}.pickle"
+        parquetTarget = ".".join(list(target.split('.'))[:-1]) + ".parquet"
+        newParquetFilename = f"{featureId}.parquet"
         tsvTarget = ".".join(list(target.split('.'))[:-1]) + ".tsv"
         shutil.move(f"contents/temporaryUse/{oldFeatureId}!{originalFilename}",f"contents/tables/{newOriginalFilename}")
         shutil.move(tsvTarget, f"contents/tables/{newFilename}")
-        shutil.move(pickleTarget, f"contents/tables/{newPickleFilename}")
+        shutil.move(parquetTarget, f"contents/tables/{newParquetFilename}")
         return f"{os.environ['TOPOSOID_CONTENTS_URL']}tables/{newFilename}"
     elif featureType == FeatureType.DOCUMENT:
         shutil.move(f"contents/temporaryUse/{oldFeatureId}!{originalFilename}",f"contents/documents/{newOriginalFilename}")
@@ -294,7 +294,10 @@ def convertTable2Tsv(knowledgeForTable:KnowledgeForTable):
         os.remove(target)
         convert_filaname = ".".join(list(target.split('.'))[:-1]) + ".tsv"
         df.to_csv(convert_filaname, index = False, sep='\t', header=False, encoding="utf-8")  
-        df.to_pickle(".".join(list(target.split('.'))[:-1]) + ".pickle")        
+        for col in df.columns:
+            if df[col].dtype == 'object':
+                df[col] = df[col].astype(str)
+        df.to_parquet(".".join(list(target.split('.'))[:-1]) + ".parquet")        
         return convert_filaname
             
     elif mime.startswith('text/'):            
@@ -331,7 +334,10 @@ def convertTable2Tsv(knowledgeForTable:KnowledgeForTable):
         os.remove(target)
         convert_filaname = target.split('.')[:-1] + ".tsv"
         df.to_csv(".".join(list(target.split('.'))[:-1]) + ".tsv", index = False, sep='\t', header=False, encoding="utf-8")  
-        df.to_pickle(".".join(list(target.split('.'))[:-1]) + ".pickle")   
+        for col in df.columns:
+            if df[col].dtype == 'object':
+                df[col] = df[col].astype(str)
+        df.to_parquet(".".join(list(target.split('.'))[:-1]) + ".parquet")   
              
         return convert_filaname
     else:
