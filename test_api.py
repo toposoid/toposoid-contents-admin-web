@@ -93,6 +93,35 @@ class TestToposoidContentsAdminWeb(object):
         assert registImageContentResult.statusInfo.status == "OK"        
         assert os.path.exists(f"contents/images/{registImageContentResult.knowledgeForImage.id}.jpg")
 
+    def test_registerImage2(self):
+        featureId = str(uuid.uuid4())
+        target = f"contents/temporaryUse/{featureId}.jpg"        
+        shutil.copy("IMAGE_TEST.jpg",target)
+        shutil.copy("IMAGE_TEST.jpg",f"contents/temporaryUse/{featureId}!IMAGE_TEST.jpg" )
+
+        response = self.client.post("/registerImage",
+                            headers={"Content-Type": "application/json", "X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},
+                            json={
+                                "id": self.id1,
+                                "imageReference":{
+                                "reference": {
+                                    "url": f"{os.environ['TOPOSOID_CONTENTS_URL']}temporaryUse/{featureId}.jpg",
+                                    "surface": "",
+                                    "surfaceIndex": "-1",
+                                    "isWholeSentence": True,
+                                    "originalUrlOrReference": "http://images.cocodataset.org/val2017/000000039769.jpg",
+                                    "metaInformations": []
+                                },
+                                "x": 0,
+                                "y": 0,
+                                "width": 0,
+                                "height": 0}
+                            })
+        assert response.status_code == 200
+        registImageContentResult = RegisteredImageContentResult.parse_obj(response.json())
+        assert registImageContentResult.statusInfo.status == "OK"        
+        assert os.path.exists(f"contents/images/{registImageContentResult.knowledgeForImage.id}.jpg")
+
     
     def test_registerTable(self):
         featureId = str(uuid.uuid4())

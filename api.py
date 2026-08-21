@@ -79,9 +79,13 @@ def registerImage(knowledgeForImage:KnowledgeForImage, X_TOPOSOID_TRANSVERSAL_ST
     try:                   
         #ファイルはknowledgeForImage.imageReference.reference.urlに保存されている前提
         #if not knowledgeForImage.imageReference.reference.isWholeSentence:
-        target = convertImageSize(knowledgeForImage)
+        target, x, y, w, h = convertImageSize(knowledgeForImage)
         #target = "contents/" + knowledgeForImage.imageReference.reference.url.replace(os.environ["TOPOSOID_CONTENTS_URL"], "")
         knowledgeForImage.imageReference.reference.url = save(FeatureType.IMAGE, knowledgeForImage.id, target)
+        knowledgeForImage.imageReference.x = x
+        knowledgeForImage.imageReference.y = y
+        knowledgeForImage.imageReference.width = w
+        knowledgeForImage.imageReference.height = h
         response = JSONResponse(content=jsonable_encoder(RegisteredImageContentResult(knowledgeForImage=knowledgeForImage, statusInfo=StatusInfo(status="OK", message="")) ))
         LOG.info(f"Saving image completed.[url:{knowledgeForImage.imageReference.reference.url}]", transversalState)
         return response
@@ -264,14 +268,19 @@ def getOriginalFilename(featureType, filepath):
 def convertImageSize(knowledgeForImage:KnowledgeForImage):
     target = "contents/" +knowledgeForImage.imageReference.reference.url.replace(os.environ["TOPOSOID_CONTENTS_URL"], "")
     image = cv2.imread(target)
-    #イメージサイズが指定されていたら保存ファイルのサイズ変更をする。
-    x = knowledgeForImage.imageReference.x
-    y = knowledgeForImage.imageReference.y
-    w = knowledgeForImage.imageReference.width
-    h = knowledgeForImage.imageReference.height
-    #上書き
-    cv2.imwrite(target, image[y:y+h, x:x+w])
-    return target
+    if knowledgeForImage.imageReference.width == 0 or knowledgeForImage.imageReference.height == 0:
+        h, w, channels = image.shape
+        x = 0
+        y = 0
+    else:
+        #イメージサイズが指定されていたら保存ファイルのサイズ変更をする。
+        x = knowledgeForImage.imageReference.x
+        y = knowledgeForImage.imageReference.y
+        w = knowledgeForImage.imageReference.width
+        h = knowledgeForImage.imageReference.height
+        #上書き
+        cv2.imwrite(target, image[y:y+h, x:x+w])
+    return target, x, y, w, h
 
 
 def convertTable2Tsv(knowledgeForTable:KnowledgeForTable):
