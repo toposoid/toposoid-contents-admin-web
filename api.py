@@ -36,6 +36,10 @@ from ElasiticMQUtils import sendMessage
 from RdbUtils import addDocumentAnalysisResultHistory, getKnowledgeRegisterHistoryTotalCountByDocumentId, getKnowledgeRegisterHistoryCountByDocumentId, searchLatestDocumentAnalysisStateByDocumentId, UPLOAD_COMPLETED, ANALYSIS_COMPLETED
 import glob
 from pathlib import Path
+import magic
+import pandas as pd
+import io
+import csv
 
 LOG = tc.LogUtils(__name__)
 TOPOSOID_MQ_DOCUMENT_ANALYSIS_QUENE = os.environ["TOPOSOID_MQ_DOCUMENT_ANALYSIS_QUENE"]
@@ -74,9 +78,9 @@ def registerImage(knowledgeForImage:KnowledgeForImage, X_TOPOSOID_TRANSVERSAL_ST
     transversalState = TransversalState.parse_raw(X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
     try:                   
         #ファイルはknowledgeForImage.imageReference.reference.urlに保存されている前提
-        if not knowledgeForImage.imageReference.reference.isWholeSentence:
-            convertImageSize(knowledgeForImage)
-        target = "contents/" + knowledgeForImage.imageReference.reference.url.replace(os.environ["TOPOSOID_CONTENTS_URL"], "")
+        #if not knowledgeForImage.imageReference.reference.isWholeSentence:
+        target = convertImageSize(knowledgeForImage)
+        #target = "contents/" + knowledgeForImage.imageReference.reference.url.replace(os.environ["TOPOSOID_CONTENTS_URL"], "")
         knowledgeForImage.imageReference.reference.url = save(FeatureType.IMAGE, knowledgeForImage.id, target)
         response = JSONResponse(content=jsonable_encoder(RegisteredImageContentResult(knowledgeForImage=knowledgeForImage, statusInfo=StatusInfo(status="OK", message="")) ))
         LOG.info(f"Saving image completed.[url:{knowledgeForImage.imageReference.reference.url}]", transversalState)
@@ -91,7 +95,9 @@ def registerTable(knowledgeForTable:KnowledgeForTable, X_TOPOSOID_TRANSVERSAL_ST
     transversalState = TransversalState.parse_raw(X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
     try:                   
         #ファイルはknowledgeForTable.tableReference.reference.urlに保存されている前提
-        target = "contents/" + knowledgeForTable.tableReference.reference.url.replace(os.environ["TOPOSOID_CONTENTS_URL"], "")
+        #if not knowledgeForTable.tableReference.reference.isWholeSentence:
+        target = convertTable2Tsv(knowledgeForTable)
+        #target = "contents/" + knowledgeForTable.tableReference.reference.url.replace(os.environ["TOPOSOID_CONTENTS_URL"], "")
         knowledgeForTable.tableReference.reference.url = save(FeatureType.TABLE, knowledgeForTable.id, target)
         response = JSONResponse(content=jsonable_encoder(RegisteredTableContentResult(knowledgeForTable=knowledgeForTable, statusInfo=StatusInfo(status="OK", message="")) ))
         LOG.info(f"Saving table completed.[url:{knowledgeForTable.tableReference.reference.url}]", transversalState)
@@ -109,7 +115,7 @@ def registerDocument(document: Document, X_TOPOSOID_TRANSVERSAL_STATE: Optional[
         #ファイルはdocument.urlに保存されている前提
         document.documentId = str(uuid.uuid1())
         target = "contents/" + document.url.replace(os.environ["TOPOSOID_CONTENTS_URL"], "")
-        originalFilename = getOriginalFilename(target)
+        originalFilename = getOriginalFilename(FeatureType.DOCUMENT, target)
         document.size = os.path.getsize(target)
         document.url = save(FeatureType.DOCUMENT, document.documentId, target) 
         #filepath = "contents/" + document.url.replace(os.environ["TOPOSOID_CONTENTS_URL"], "")  
@@ -211,7 +217,7 @@ def save(featureType, featureId, target):
 
     #オリジナルファイルの特定
     oldFeatureId = Path(target).stem
-    originalFilename = getOriginalFilename(target)
+    originalFilename = getOriginalFilename(featureType, target)
     newOriginalFilename = f"{featureId}!{originalFilename}"
 
     #公開URLを新規に確定する。featureIdは、所与の前提
@@ -221,8 +227,12 @@ def save(featureType, featureId, target):
         shutil.move(target, f"contents/images/{newFilename}")
         return f"{os.environ['TOPOSOID_CONTENTS_URL']}images/{newFilename}"
     elif featureType == FeatureType.TABLE:
+        pickleTarget = ".".join(list(target.split('.'))[:-1]) + ".pickle"
+        newPickleFilename = f"{featureId}.pickle"
+        tsvTarget = ".".join(list(target.split('.'))[:-1]) + ".tsv"
         shutil.move(f"contents/temporaryUse/{oldFeatureId}!{originalFilename}",f"contents/tables/{newOriginalFilename}")
-        shutil.move(target, f"contents/tables/{newFilename}")
+        shutil.move(tsvTarget, f"contents/tables/{newFilename}")
+        shutil.move(pickleTarget, f"contents/tables/{newPickleFilename}")
         return f"{os.environ['TOPOSOID_CONTENTS_URL']}tables/{newFilename}"
     elif featureType == FeatureType.DOCUMENT:
         shutil.move(f"contents/temporaryUse/{oldFeatureId}!{originalFilename}",f"contents/documents/{newOriginalFilename}")
@@ -232,13 +242,19 @@ def save(featureType, featureId, target):
         raise Exception("There's something wrong with the featureId.")
 
 
-def getOriginalFilename(filepath):
+def getOriginalFilename(featureType, filepath):
     #拡張子を取り除いたパス
     filePath = Path(filepath)
     #オリジナルファイルとセットで二つあるか
     filelist = glob.glob(f"{filePath.parent}/{filePath.stem}*")
-    if not len(filelist) ==  2:
-        raise Exception(f"The number of uploaded files is not two. {filelist}")
+    if featureType == FeatureType.TABLE:
+        if not len(filelist) ==  3:
+            raise Exception(f"The number of uploaded files is not two. {filelist}")
+    else:
+        if not len(filelist) ==  2:
+            raise Exception(f"The number of uploaded files is not two. {filelist}")
+
+
     originalfile = list(filter(lambda x: "!" in  x, filelist))
     if not len(originalfile) == 1:
         raise Exception(f"The original file does not exist. {filelist}")
@@ -255,99 +271,73 @@ def convertImageSize(knowledgeForImage:KnowledgeForImage):
     h = knowledgeForImage.imageReference.height
     #上書き
     cv2.imwrite(target, image[y:y+h, x:x+w])
+    return target
 
 
-"""
-@app.post("/registImage",
-          summary='register image files')
-def registImage(knowledgeForImage:KnowledgeForImage, X_TOPOSOID_TRANSVERSAL_STATE: Optional[str] = Header(None, convert_underscores=False)):
-    transversalState = TransversalState.parse_raw(X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
-    try:           
-        rawDataAdmin.getRawData(knowledgeForImage.id, None, knowledgeForImage.imageReference.reference.originalUrlOrReference)
-        updatedKnowledgeForImage = imageAdmin.registImage(knowledgeForImage, False)
-        response = JSONResponse(content=jsonable_encoder(RegistImageContentResult(knowledgeForImage=updatedKnowledgeForImage, statusInfo=StatusInfo(status="OK", message="")) ))
-        LOG.info(f"Image upload completed.[url:{knowledgeForImage.imageReference.reference.url}]", transversalState)
-        return response
-    except Exception as e:
-        LOG.error(traceback.format_exc(), transversalState)
-        return JSONResponse(content=jsonable_encoder(RegistImageContentResult(knowledgeForImage=knowledgeForImage, statusInfo=StatusInfo(status="ERROR", message=traceback.format_exc()))))
+def convertTable2Tsv(knowledgeForTable:KnowledgeForTable):
+    target = "contents/" +knowledgeForTable.tableReference.reference.url.replace(os.environ["TOPOSOID_CONTENTS_URL"], "")
+    input = knowledgeForTable.tableReference
+    #Excelかテキストかそれ以外かを見分ける
+    mime = magic.from_file(target, mime=True)    
+    if mime == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
+        if len(input.skipRowList) == 0:
+            if input.sheetNameForExcel == "":
+                df = pd.read_excel(target, skiprows=input.skipHeaderRows, header=range(input.multiHeaderRows)) 
+            else:
+                df = pd.read_excel(target, skiprows=input.skipHeaderRows, header=list(range(input.multiHeaderRows)), sheet_name=input.sheetNameForExcel) 
+        else:
+            if input.sheetNameForExcel == "":
+                df = pd.read_excel(target, skiprows=input.skipRowList, header=range(input.multiHeaderRows)) 
+            else:
+                df = pd.read_excel(target, skiprows=input.skipRowList, header=range(input.multiHeaderRows), sheet_name=input.sheetNameForExcel) 
 
-@app.post("/registTable",
-          summary='register table files')
-def registTable(knowledgeForTable:KnowledgeForTable, X_TOPOSOID_TRANSVERSAL_STATE: Optional[str] = Header(None, convert_underscores=False)):
-    transversalState = TransversalState.parse_raw(X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
-    try: 
+        os.remove(target)
+        convert_filaname = ".".join(list(target.split('.'))[:-1]) + ".tsv"
+        df.to_csv(convert_filaname, index = False, sep='\t', header=False, encoding="utf-8")  
+        df.to_pickle(".".join(list(target.split('.'))[:-1]) + ".pickle")        
+        return convert_filaname
+            
+    elif mime.startswith('text/'):            
+        max_length = 0
+        is_variable = False
+        foundFirstLine = False
+        with open(target, 'r', encoding='utf-8', newline='') as f:
+            reader = csv.reader(f)            
+            for i, row in enumerate(reader):
+                if len(input.skipRowList) == 0:
+                    if i < input.skipHeaderRows:
+                        continue
+                else:
+                    if i + 1 in input.skipRowList:continue
+                if foundFirstLine and not is_variable and max_length != len(row):
+                    is_variable = True
+                max_length = max(max_length, len(row))
+                foundFirstLine = True
         
-        rawDataAdmin.getRawData(id, None, knowledgeForTable)
-        updatedKnowledgeForTable = tableAdmin.registTable(knowledgeForTable, False)
-        response = JSONResponse(content=jsonable_encoder(RegistTableContentResult(knowledgeForTable=updatedKnowledgeForTable, statusInfo=StatusInfo(status="OK", message="")) ))
-        LOG.info(f"Table upload completed.[url:{knowledgeForTable.tableReference.reference.url}]", transversalState)
-        return response
-    except Exception as e:
-        LOG.error(traceback.format_exc(), transversalState)
-        return JSONResponse(content=jsonable_encoder(RegistTableContentResult(knowledgeForTable=knowledgeForTable, statusInfo=StatusInfo(status="ERROR", message=traceback.format_exc()))))
-"""
+        col_names = list(range(max_length))
+        if is_variable:
+            #列が可変長の場合
+            if len(input.skipRowList) == 0:
+                df = pd.read_csv(target, skiprows=input.skipHeaderRows, header=None, names=col_names) 
+            else:
+                df = pd.read_csv(target, skiprows=input.skipRowList, header=None, names=col_names) 
+        else:
+            #ヘッダを認識させられる時は、そうする。
+            if len(input.skipRowList) == 0:
+                df = pd.read_csv(target, skiprows=input.skipHeaderRows, header=range(input.multiHeaderRows))   
+            else:
+                df = pd.read_csv(target, skiprows=input.skipRowList, header=range(input.multiHeaderRows))  
 
-"""
-@app.post("/uploadTemporaryImage",
-          summary='upload image files as temporary')
-def uploadTemporaryImage(knowledgeForImage:KnowledgeForImage, X_TOPOSOID_TRANSVERSAL_STATE: Optional[str] = Header(None, convert_underscores=False)):
-    transversalState = TransversalState.parse_raw(X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
-    try:            
-        updatedKnowledgeForImage = imageAdmin.registImage(knowledgeForImage, True)
-        response = JSONResponse(content=jsonable_encoder(RegistImageContentResult(knowledgeForImage=updatedKnowledgeForImage, statusInfo=StatusInfo(status="OK", message=""))))
-        LOG.info(f"Image upload completed.[url:{updatedKnowledgeForImage.imageReference.reference.url}]", transversalState)
-        return response
-    except Exception as e:
-        LOG.error(traceback.format_exc(), transversalState)
-        return JSONResponse(content=jsonable_encoder(RegistImageContentResult(knowledgeForImage=knowledgeForImage, statusInfo=StatusInfo(status="ERROR", message=traceback.format_exc()))))
+        os.remove(target)
+        convert_filaname = target.split('.')[:-1] + ".tsv"
+        df.to_csv(".".join(list(target.split('.'))[:-1]) + ".tsv", index = False, sep='\t', header=False, encoding="utf-8")  
+        df.to_pickle(".".join(list(target.split('.'))[:-1]) + ".pickle")   
+             
+        return convert_filaname
+    else:
+        raise Exception(f"Excluded MIME TYPE{mime}")
 
-@app.post("/uploadImageFile")
-async def createUploadImageFile(uploadfile: UploadFile = File(...), X_TOPOSOID_TRANSVERSAL_STATE: Optional[str] = Header(None, convert_underscores=False)):   
-    transversalState = TransversalState.parse_raw(X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
-    id = str(uuid.uuid1())
-    path = f'tmp/{id}-{uploadfile.filename}'
-    #url = os.environ["TOPOSOID_CONTENTS_URL"] + "temporaryUse/" + id + "-" + uploadfile.filename
-    with open(path, 'w+b') as buffer:
-        shutil.copyfileobj(uploadfile.file, buffer)    
-    #TODO:check File
-    url = imageAdmin.convertJpeg(path, id)
-    LOG.info(f"Image upload completed.[url:{url}", transversalState)
-    return {
-        'url': url,        
-    }
-
-
-@app.post("/uploadTemporaryTable",
-          summary='upload table files as temporary')
-def uploadTemporaryTable(knowledgeForTable:KnowledgeForTable, X_TOPOSOID_TRANSVERSAL_STATE: Optional[str] = Header(None, convert_underscores=False)):
-    transversalState = TransversalState.parse_raw(X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
-    try:        
-        rawDataAdmin.getRawData(id, None, knowledgeForTable)    
-        updatedKnowledgeForTable = tableAdmin.registTable(knowledgeForTable, True)
-        response = JSONResponse(content=jsonable_encoder(RegistTableContentResult(knowledgeForTable=updatedKnowledgeForTable, statusInfo=StatusInfo(status="OK", message=""))))
-        LOG.info(f"Image upload completed.[url:{updatedKnowledgeForTable.tableReference.reference.url}]", transversalState)
-        return response
-    except Exception as e:
-        LOG.error(traceback.format_exc(), transversalState)
-        return JSONResponse(content=jsonable_encoder(RegistTableContentResult(knowledgeForImage=knowledgeForTable, statusInfo=StatusInfo(status="ERROR", message=traceback.format_exc()))))
-
-
-@app.post("/uploadTableFile")
-async def createUploadTableFile(uploadfile: UploadFile = File(...), X_TOPOSOID_TRANSVERSAL_STATE: Optional[str] = Header(None, convert_underscores=False)):   
-    transversalState = TransversalState.parse_raw(X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
-    id = str(uuid.uuid1())
-    path = f'tmp/{id}-{uploadfile.filename}'
-    rawDataAdmin.getRawData(id, uploadfile.file, uploadfile.filename, True)
-
-    #url = os.environ["TOPOSOID_CONTENTS_URL"] + "temporaryUse/" + id + "-" + uploadfile.filename
-    #with open(path, 'w+b') as buffer:
-    #    shutil.copyfileobj(uploadfile.file, buffer)    
     
-    url = tableAdmin.convertUtf8(path, id)
-    LOG.info(f"Table upload completed.[url:{url}", transversalState)
-    return {
-        'url': url,        
-    }
-"""
+
+
 
