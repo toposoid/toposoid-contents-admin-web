@@ -284,7 +284,7 @@ def convertTable2Tsv(knowledgeForTable:KnowledgeForTable):
             if input.sheetNameForExcel == "":
                 df = pd.read_excel(target, skiprows=input.skipHeaderRows, header=range(input.multiHeaderRows)) 
             else:
-                df = pd.read_excel(target, skiprows=input.skipHeaderRows, header=list(range(input.multiHeaderRows)), sheet_name=input.sheetNameForExcel) 
+                df = pd.read_excel(target, skiprows=input.skipHeaderRows, header=range(input.multiHeaderRows), sheet_name=input.sheetNameForExcel) 
         else:
             if input.sheetNameForExcel == "":
                 df = pd.read_excel(target, skiprows=input.skipRowList, header=range(input.multiHeaderRows)) 
