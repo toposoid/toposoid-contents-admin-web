@@ -140,34 +140,6 @@ def registerDocument(document: Document, X_TOPOSOID_TRANSVERSAL_STATE: Optional[
         LOG.error(traceback.format_exc(), transversalState)
         return JSONResponse(content=jsonable_encoder(RegisteredDocumentContentResult(document=document, statusInfo=StatusInfo(status="ERROR", message=traceback.format_exc()))))
 
-
-@app.post("/uploadDocumentFile")
-async def createUploadDocumentFile(uploadfile: UploadFile = File(...), X_TOPOSOID_TRANSVERSAL_STATE: Optional[str] = Header(None, convert_underscores=False)):   
-    transversalState = TransversalState.parse_raw(X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
-    #TODO:tryブロックをつけて例外の時は、mysqlに書き込む。
-    id = str(uuid.uuid1())
-    elements = uploadfile.filename.split(".")
-    ext = ""
-    if len(elements) > 1:
-        ext = "." + elements[-1]
-
-    path = f'tmp/{id}-{uploadfile.filename}'    
-    with open(path, 'w+b') as buffer:
-        shutil.copyfileobj(uploadfile.file, buffer)    
-    size = os.path.getsize(path)
-    #TODO:check File
-    shutil.move(path, "contents/documents/%s-%s" % (id, uploadfile.filename))    
-    shutil.copy("contents/documents/%s-%s" % (id, uploadfile.filename),"contents/documents/%s%s" % (id, ext) )
-    url = os.environ["TOPOSOID_CONTENTS_URL"] + "documents/" + id + ext
-
-    #Publish to document-analysis-subscriber. Register information in mysql instead of pushing unnecessary things to MQ
-    addDocumentAnalysisResultHistory(UPLOAD_COMPLETED, id, uploadfile.filename, X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
-    document = Document(documentId=id, filename=uploadfile.filename, url=url, size=size)
-    requestJson = str(jsonable_encoder(DocumentRegistration(document=document, transversalState=transversalState))).replace("'", "\"")
-    sendMessage(TOPOSOID_MQ_DOCUMENT_ANALYSIS_QUENE, requestJson)
-    LOG.info(f"Document upload completed.[url:{url}]", transversalState)
-    return JSONResponse(content=jsonable_encoder(Document(documentId=id, filename=uploadfile.filename, url=url, size=size)))
-
 @app.post("/analyzePdfDocument")
 def analyzePdfDocument(document: Document, X_TOPOSOID_TRANSVERSAL_STATE: Optional[str] = Header(None, convert_underscores=False)):
     transversalState = TransversalState.parse_raw(X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
@@ -353,6 +325,34 @@ def convertTable2Tsv(knowledgeForTable:KnowledgeForTable):
         raise Exception(f"Excluded MIME TYPE{mime}")
 
     
+"""
+@app.post("/uploadDocumentFile")
+async def createUploadDocumentFile(uploadfile: UploadFile = File(...), X_TOPOSOID_TRANSVERSAL_STATE: Optional[str] = Header(None, convert_underscores=False)):   
+    transversalState = TransversalState.parse_raw(X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
+    #TODO:tryブロックをつけて例外の時は、mysqlに書き込む。
+    id = str(uuid.uuid1())
+    elements = uploadfile.filename.split(".")
+    ext = ""
+    if len(elements) > 1:
+        ext = "." + elements[-1]
+
+    path = f'tmp/{id}-{uploadfile.filename}'    
+    with open(path, 'w+b') as buffer:
+        shutil.copyfileobj(uploadfile.file, buffer)    
+    size = os.path.getsize(path)
+    #TODO:check File
+    shutil.move(path, "contents/documents/%s-%s" % (id, uploadfile.filename))    
+    shutil.copy("contents/documents/%s-%s" % (id, uploadfile.filename),"contents/documents/%s%s" % (id, ext) )
+    url = os.environ["TOPOSOID_CONTENTS_URL"] + "documents/" + id + ext
+
+    #Publish to document-analysis-subscriber. Register information in mysql instead of pushing unnecessary things to MQ
+    addDocumentAnalysisResultHistory(UPLOAD_COMPLETED, id, uploadfile.filename, X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
+    document = Document(documentId=id, filename=uploadfile.filename, url=url, size=size)
+    requestJson = str(jsonable_encoder(DocumentRegistration(document=document, transversalState=transversalState))).replace("'", "\"")
+    sendMessage(TOPOSOID_MQ_DOCUMENT_ANALYSIS_QUENE, requestJson)
+    LOG.info(f"Document upload completed.[url:{url}]", transversalState)
+    return JSONResponse(content=jsonable_encoder(Document(documentId=id, filename=uploadfile.filename, url=url, size=size)))
+"""
 
 
 

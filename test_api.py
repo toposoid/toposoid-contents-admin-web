@@ -201,9 +201,21 @@ class TestToposoidContentsAdminWeb(object):
     
     def test_analyzePdfDocument(self):
 
-        with open("JAPANESE_DOCUMENT_FOR_TEST.pdf", "rb") as f:
-            response = self.client.post("/uploadDocumentFile", headers={"X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},files={"uploadfile": ("DOCUMENT_FOR_TEST.pdf", f, "application/pdf")})
-        assert response.status_code == status.HTTP_200_OK        
+        #with open("JAPANESE_DOCUMENT_FOR_TEST.pdf", "rb") as f:
+        #    response = self.client.post("/uploadDocumentFile", headers={"X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},files={"uploadfile": ("DOCUMENT_FOR_TEST.pdf", f, "application/pdf")})
+        #assert response.status_code == status.HTTP_200_OK        
+        documentId = str(uuid.uuid4())
+        target = f"contents/temporaryUse/{documentId}.pdf"
+        shutil.copy("JAPANESE_DOCUMENT_FOR_TEST.pdf",target)
+        shutil.copy("JAPANESE_DOCUMENT_FOR_TEST.pdf",f"contents/temporaryUse/{documentId}!JAPANESE_DOCUMENT_FOR_TEST.pdf" )        
+        document = Document(documentId = "", filename = "", url=f"{os.environ['TOPOSOID_CONTENTS_URL']}temporaryUse/{documentId}.pdf", size=0)
+        response = self.client.post("/registerDocument", 
+                                    headers={"Content-Type": "application/json", "X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},
+                                    json=jsonable_encoder(document))
+        assert response.status_code == status.HTTP_200_OK
+        registDocumentContentResult = RegisteredDocumentContentResult.parse_obj(response.json())        
+        assert(registDocumentContentResult.statusInfo.status == "OK")
+
         documentRegistrationJson = receiveMessage(TOPOSOID_MQ_DOCUMENT_ANALYSIS_QUENE)
         documentRegistration = DocumentRegistration.parse_raw(documentRegistrationJson)    
         requestHeaders = {'Content-type': 'application/json', 'X_TOPOSOID_TRANSVERSAL_STATE': self.transversalState}                
