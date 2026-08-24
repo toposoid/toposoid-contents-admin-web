@@ -225,7 +225,7 @@ def getOriginalFilename(featureType, filepath):
     filelist = glob.glob(f"{filePath.parent}/{filePath.stem}*")
     if featureType == FeatureType.TABLE:
         if not len(filelist) ==  3:
-            raise Exception(f"The number of uploaded files is not two. {filelist}")
+            raise Exception(f"The number of uploaded files is not three. {filelist}")
     else:
         if not len(filelist) ==  2:
             raise Exception(f"The number of uploaded files is not two. {filelist}")
@@ -263,14 +263,14 @@ def convertTable2Tsv(knowledgeForTable:KnowledgeForTable):
     if mime == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
         if len(input.skipRowList) == 0:
             if input.sheetNameForExcel == "":
-                df = pd.read_excel(target, skiprows=input.skipHeaderRows, header=range(input.multiHeaderRows)) 
+                df = pd.read_excel(target, skiprows=input.skipHeaderRows, header=list(range(input.multiHeaderRows))) 
             else:
-                df = pd.read_excel(target, skiprows=input.skipHeaderRows, header=range(input.multiHeaderRows), sheet_name=input.sheetNameForExcel) 
+                df = pd.read_excel(target, skiprows=input.skipHeaderRows, header=list(range(input.multiHeaderRows)), sheet_name=input.sheetNameForExcel) 
         else:
             if input.sheetNameForExcel == "":
-                df = pd.read_excel(target, skiprows=input.skipRowList, header=range(input.multiHeaderRows)) 
+                df = pd.read_excel(target, skiprows=input.skipRowList, header=list(range(input.multiHeaderRows))) 
             else:
-                df = pd.read_excel(target, skiprows=input.skipRowList, header=range(input.multiHeaderRows), sheet_name=input.sheetNameForExcel) 
+                df = pd.read_excel(target, skiprows=input.skipRowList, header=list(range(input.multiHeaderRows)), sheet_name=input.sheetNameForExcel) 
 
         os.remove(target)
         convert_filaname = ".".join(list(target.split('.'))[:-1]) + ".tsv"
