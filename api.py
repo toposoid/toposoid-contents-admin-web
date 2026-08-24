@@ -308,13 +308,13 @@ def convertTable2Tsv(knowledgeForTable:KnowledgeForTable):
         else:
             #ヘッダを認識させられる時は、そうする。
             if len(input.skipRowList) == 0:
-                df = pd.read_csv(target, skiprows=input.skipHeaderRows, header=range(input.multiHeaderRows))   
+                df = pd.read_csv(target, skiprows=input.skipHeaderRows, header=list(range(input.multiHeaderRows)))   
             else:
-                df = pd.read_csv(target, skiprows=input.skipRowList, header=range(input.multiHeaderRows))  
+                df = pd.read_csv(target, skiprows=input.skipRowList, header=list(range(input.multiHeaderRows)))  
 
         os.remove(target)
-        convert_filaname = target.split('.')[:-1] + ".tsv"
-        df.to_csv(".".join(list(target.split('.'))[:-1]) + ".tsv", index = False, sep='\t', header=False, encoding="utf-8")  
+        convert_filaname = ".".join(list(target.split('.'))[:-1]) + ".tsv"
+        df.to_csv(convert_filaname, index = False, sep='\t', header=False, encoding="utf-8")  
         for col in df.columns:
             if df[col].dtype == 'object':
                 df[col] = df[col].astype(str)

@@ -31,6 +31,9 @@ from pydantic import parse_obj_as
 import shutil
 import pandas as pd
 import urllib
+import tempfile
+from charset_normalizer import from_bytes
+import io
 
 TOPOSOID_MQ_DOCUMENT_ANALYSIS_QUENE = os.environ["TOPOSOID_MQ_DOCUMENT_ANALYSIS_QUENE"]
 
@@ -190,8 +193,8 @@ class TestToposoidContentsAdminWeb(object):
 
     def test_registerTable3(self):
         featureId = str(uuid.uuid4())
-        target = f"contents/temporaryUse/{featureId}.xlsx"
-        self.saveExcel(url = "https://www.e-stat.go.jp/stat-search/file-download?statInfId=000001086170&fileKind=0", 
+        target = f"contents/temporaryUse/{featureId}.tsv"
+        self.saveTsv(url = "https://www.e-stat.go.jp/stat-search/file-download?statInfId=000040292480&fileKind=1", 
                        filename = target,
                        featureId = featureId)
         
@@ -202,17 +205,17 @@ class TestToposoidContentsAdminWeb(object):
                                 "id": featureId,
                                 "tableReference":{
                                 "reference": {
-                                    "url": f"{os.environ['TOPOSOID_CONTENTS_URL']}temporaryUse/{featureId}.xlsx",
+                                    "url": f"{os.environ['TOPOSOID_CONTENTS_URL']}temporaryUse/{featureId}.tsv",
                                     "surface": "データが",
                                     "surfaceIndex": "0",
                                     "isWholeSentence": False,
-                                    "originalUrlOrReference": "https://www.e-stat.go.jp/stat-search/file-download?statInfId=000001086170&fileKind=0",
+                                    "originalUrlOrReference": "https://www.e-stat.go.jp/stat-search/file-download?statInfId=000040292480&fileKind=1",
                                     "metaInformations": []
                                 },
-                                "skipHeaderRows":5,
+                                "skipHeaderRows":8,
                                 "skipRowList":[],
-                                "multiHeaderRows":4, 
-                                "sheetNameForExcel": "se0101"
+                                "multiHeaderRows":2, 
+                                "sheetNameForExcel": ""
                                 }
                             })
         assert response.status_code == 200
@@ -345,3 +348,25 @@ class TestToposoidContentsAdminWeb(object):
         with open(filename, 'wb') as f:
             f.write(data)
         shutil.copy(filename,f"contents/temporaryUse/{featureId}!.xlsx" )
+
+
+    def saveTsv(self, url, filename, featureId):
+        with urllib.request.urlopen(url) as response:
+            data = response.read() # バイト列の取得
+
+        # 2. tempfile で一時ファイルを作成し、読み込む
+        with tempfile.NamedTemporaryFile(delete=True) as tmp:
+            # バイト列をファイルに書き込む
+            tmp.write(data)    
+            # 読み込みのためにファイルポインタを先頭に戻す
+            tmp.seek(0)    
+            # 一時ファイルの中身を読み込む
+            content = tmp.read()
+            res = from_bytes(
+                content
+            )    
+        byte_stream = io.BytesIO(content)
+        text_stream = io.TextIOWrapper(byte_stream, encoding=res.best().encoding if res.best() is not None else 'utf-8', errors='ignore')
+        with open(filename, 'w', encoding='utf-8') as f:
+            f.write(text_stream.read().replace(",", "\t") )
+        shutil.copy(filename,f"contents/temporaryUse/{featureId}!.tsv" )
