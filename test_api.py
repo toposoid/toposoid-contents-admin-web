@@ -28,8 +28,9 @@ from RdbUtils import addDocumentAnalysisResultHistory, addKnowledgeRegisterHisto
 from ElasiticMQUtils import receiveMessage
 from typing import List
 from pydantic import parse_obj_as
-import pprint
 import shutil
+import pandas as pd
+import urllib
 
 TOPOSOID_MQ_DOCUMENT_ANALYSIS_QUENE = os.environ["TOPOSOID_MQ_DOCUMENT_ANALYSIS_QUENE"]
 
@@ -144,7 +145,7 @@ class TestToposoidContentsAdminWeb(object):
                                 },
                                 "skipHeaderRows":0,
                                 "skipRowList":[],
-                                "multiHeaderRowsForExcel":1, 
+                                "multiHeaderRows":1, 
                                 "sheetNameForExcel": ""
                                 }
                             })
@@ -153,7 +154,73 @@ class TestToposoidContentsAdminWeb(object):
         assert registTableContentResult.statusInfo.status == "OK"        
         assert os.path.exists(f"contents/tables/{registTableContentResult.knowledgeForTable.id}.tsv")
         assert os.path.exists(f"contents/tables/{registTableContentResult.knowledgeForTable.id}.parquet")
-    
+
+    def test_registerTable2(self):
+        featureId = str(uuid.uuid4())
+        target = f"contents/temporaryUse/{featureId}.xlsx"
+        self.saveExcel(url = "https://www.e-stat.go.jp/stat-search/file-download?statInfId=000001086170&fileKind=0", 
+                       filename = target,
+                       featureId = featureId)
+        
+
+        response = self.client.post("/registerTable",
+                            headers={"Content-Type": "application/json", "X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},
+                            json={
+                                "id": featureId,
+                                "tableReference":{
+                                "reference": {
+                                    "url": f"{os.environ['TOPOSOID_CONTENTS_URL']}temporaryUse/{featureId}.xlsx",
+                                    "surface": "データが",
+                                    "surfaceIndex": "0",
+                                    "isWholeSentence": False,
+                                    "originalUrlOrReference": "https://www.e-stat.go.jp/stat-search/file-download?statInfId=000001086170&fileKind=0",
+                                    "metaInformations": []
+                                },
+                                "skipHeaderRows":5,
+                                "skipRowList":[],
+                                "multiHeaderRows":4, 
+                                "sheetNameForExcel": "se0101"
+                                }
+                            })
+        assert response.status_code == 200
+        registTableContentResult = RegisteredTableContentResult.parse_obj(response.json())
+        assert registTableContentResult.statusInfo.status == "OK"        
+        assert os.path.exists(f"contents/tables/{registTableContentResult.knowledgeForTable.id}.tsv")
+        assert os.path.exists(f"contents/tables/{registTableContentResult.knowledgeForTable.id}.parquet")
+
+    def test_registerTable3(self):
+        featureId = str(uuid.uuid4())
+        target = f"contents/temporaryUse/{featureId}.xlsx"
+        self.saveExcel(url = "https://www.e-stat.go.jp/stat-search/file-download?statInfId=000001086170&fileKind=0", 
+                       filename = target,
+                       featureId = featureId)
+        
+
+        response = self.client.post("/registerTable",
+                            headers={"Content-Type": "application/json", "X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},
+                            json={
+                                "id": featureId,
+                                "tableReference":{
+                                "reference": {
+                                    "url": f"{os.environ['TOPOSOID_CONTENTS_URL']}temporaryUse/{featureId}.xlsx",
+                                    "surface": "データが",
+                                    "surfaceIndex": "0",
+                                    "isWholeSentence": False,
+                                    "originalUrlOrReference": "https://www.e-stat.go.jp/stat-search/file-download?statInfId=000001086170&fileKind=0",
+                                    "metaInformations": []
+                                },
+                                "skipHeaderRows":5,
+                                "skipRowList":[],
+                                "multiHeaderRows":4, 
+                                "sheetNameForExcel": "se0101"
+                                }
+                            })
+        assert response.status_code == 200
+        registTableContentResult = RegisteredTableContentResult.parse_obj(response.json())
+        assert registTableContentResult.statusInfo.status == "OK"        
+        assert os.path.exists(f"contents/tables/{registTableContentResult.knowledgeForTable.id}.tsv")
+        assert os.path.exists(f"contents/tables/{registTableContentResult.knowledgeForTable.id}.parquet")
+
     def test_registerDocument(self):
         documentId = str(uuid.uuid4())
         target = f"contents/temporaryUse/{documentId}.pdf"
@@ -272,3 +339,9 @@ class TestToposoidContentsAdminWeb(object):
         assert documentAnalysisResultHistories[0].stateId == 3
 
 
+    def saveExcel(self, url, filename, featureId):
+        with urllib.request.urlopen(url) as response:
+            data = response.read() # バイト列の取得
+        with open(filename, 'wb') as f:
+            f.write(data)
+        shutil.copy(filename,f"contents/temporaryUse/{featureId}!.xlsx" )
