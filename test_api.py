@@ -126,7 +126,36 @@ class TestToposoidContentsAdminWeb(object):
         assert registImageContentResult.statusInfo.status == "OK"        
         assert os.path.exists(f"contents/images/{registImageContentResult.knowledgeForImage.id}.jpg")
 
-    
+
+    def test_convertImage(self):
+        featureId = str(uuid.uuid4())
+        target = f"contents/temporaryUse/{featureId}.jpg"        
+        shutil.copy("IMAGE_TEST.jpg",target)
+        shutil.copy("IMAGE_TEST.jpg",f"contents/temporaryUse/{featureId}!IMAGE_TEST.jpg" )
+
+        response = self.client.post("/convertImage",
+                            headers={"Content-Type": "application/json", "X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},
+                            json={
+                                "id": featureId,
+                                "imageReference":{
+                                "reference": {
+                                    "url": f"{os.environ['TOPOSOID_CONTENTS_URL']}temporaryUse/{featureId}.jpg",
+                                    "surface": "猫が",
+                                    "surfaceIndex": "0",
+                                    "isWholeSentence": False,
+                                    "originalUrlOrReference": "http://images.cocodataset.org/val2017/000000039769.jpg",
+                                    "metaInformations": []
+                                },
+                                "x": 27,
+                                "y": 41,
+                                "width": 287,
+                                "height": 435}
+                            })
+        assert response.status_code == 200
+        registImageContentResult = RegisteredImageContentResult.parse_obj(response.json())
+        assert registImageContentResult.statusInfo.status == "OK"        
+        assert os.path.exists(f"contents/temporaryUse/{registImageContentResult.knowledgeForImage.id}.jpg")
+
     def test_registerTable(self):
         featureId = str(uuid.uuid4())
         target = f"contents/temporaryUse/{featureId}.xlsx"
@@ -136,7 +165,7 @@ class TestToposoidContentsAdminWeb(object):
         response = self.client.post("/registerTable",
                             headers={"Content-Type": "application/json", "X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},
                             json={
-                                "id": featureId,
+                                "id": self.id1,
                                 "tableReference":{
                                 "reference": {
                                     "url": f"{os.environ['TOPOSOID_CONTENTS_URL']}temporaryUse/{featureId}.xlsx",
@@ -169,7 +198,7 @@ class TestToposoidContentsAdminWeb(object):
         response = self.client.post("/registerTable",
                             headers={"Content-Type": "application/json", "X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},
                             json={
-                                "id": featureId,
+                                "id": self.id1,
                                 "tableReference":{
                                 "reference": {
                                     "url": f"{os.environ['TOPOSOID_CONTENTS_URL']}temporaryUse/{featureId}.xlsx",
@@ -202,7 +231,7 @@ class TestToposoidContentsAdminWeb(object):
         response = self.client.post("/registerTable",
                             headers={"Content-Type": "application/json", "X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},
                             json={
-                                "id": featureId,
+                                "id": self.id1,
                                 "tableReference":{
                                 "reference": {
                                     "url": f"{os.environ['TOPOSOID_CONTENTS_URL']}temporaryUse/{featureId}.tsv",
@@ -223,6 +252,40 @@ class TestToposoidContentsAdminWeb(object):
         assert registTableContentResult.statusInfo.status == "OK"        
         assert os.path.exists(f"contents/tables/{registTableContentResult.knowledgeForTable.id}.tsv")
         assert os.path.exists(f"contents/tables/{registTableContentResult.knowledgeForTable.id}.parquet")
+
+
+    def test_convertTable(self):
+        featureId = str(uuid.uuid4())
+        target = f"contents/temporaryUse/{featureId}.xlsx"
+        shutil.copy("TABLE_TEST.xlsx",target)
+        shutil.copy("TABLE_TEST.xlsx",f"contents/temporaryUse/{featureId}!TABLE_TEST.xlsx" )
+
+        response = self.client.post("/convertTable",
+                            headers={"Content-Type": "application/json", "X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},
+                            json={
+                                "id": featureId,
+                                "tableReference":{
+                                "reference": {
+                                    "url": f"{os.environ['TOPOSOID_CONTENTS_URL']}temporaryUse/{featureId}.xlsx",
+                                    "surface": "データが",
+                                    "surfaceIndex": "0",
+                                    "isWholeSentence": False,
+                                    "originalUrlOrReference": "",
+                                    "metaInformations": []
+                                },
+                                "skipHeaderRows":0,
+                                "skipRowList":[],
+                                "multiHeaderRows":1, 
+                                "sheetNameForExcel": ""
+                                }
+                            })
+        assert response.status_code == 200
+        registTableContentResult = RegisteredTableContentResult.parse_obj(response.json())
+        assert registTableContentResult.statusInfo.status == "OK"        
+        assert os.path.exists(f"contents/temporaryUse/{registTableContentResult.knowledgeForTable.id}.tsv")
+        assert os.path.exists(f"contents/temporaryUse/{registTableContentResult.knowledgeForTable.id}.parquet")
+
+
 
     def test_registerDocument(self):
         documentId = str(uuid.uuid4())

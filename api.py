@@ -111,6 +111,48 @@ def registerTable(knowledgeForTable:KnowledgeForTable, X_TOPOSOID_TRANSVERSAL_ST
         return JSONResponse(content=jsonable_encoder(RegisteredTableContentResult(knowledgeForTable=knowledgeForTable, statusInfo=StatusInfo(status="ERROR", message=traceback.format_exc()))))
 
 
+
+
+@app.post("/convertImage",
+          summary='convert image file')
+def registerImage(knowledgeForImage:KnowledgeForImage, X_TOPOSOID_TRANSVERSAL_STATE: Optional[str] = Header(None, convert_underscores=False)):
+    transversalState = TransversalState.parse_raw(X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
+    try:                   
+        #ファイルはknowledgeForImage.imageReference.reference.urlに保存されている前提
+        #if not knowledgeForImage.imageReference.reference.isWholeSentence:
+        target, x, y, w, h = convertImageSize(knowledgeForImage)
+        #target = "contents/" + knowledgeForImage.imageReference.reference.url.replace(os.environ["TOPOSOID_CONTENTS_URL"], "")
+        knowledgeForImage.imageReference.reference.url = os.environ["TOPOSOID_CONTENTS_URL"].replace("contents/", "") + target
+        knowledgeForImage.imageReference.x = x
+        knowledgeForImage.imageReference.y = y
+        knowledgeForImage.imageReference.width = w
+        knowledgeForImage.imageReference.height = h
+        response = JSONResponse(content=jsonable_encoder(RegisteredImageContentResult(knowledgeForImage=knowledgeForImage, statusInfo=StatusInfo(status="OK", message="")) ))
+        LOG.info(f"Saving image completed.[url:{knowledgeForImage.imageReference.reference.url}]", transversalState)
+        return response
+    except Exception as e:
+        LOG.error(traceback.format_exc(), transversalState)
+        return JSONResponse(content=jsonable_encoder(RegisteredImageContentResult(knowledgeForImage=knowledgeForImage, statusInfo=StatusInfo(status="ERROR", message=traceback.format_exc()))))
+
+@app.post("/convertTable",
+          summary='convert table file')
+def registerTable(knowledgeForTable:KnowledgeForTable, X_TOPOSOID_TRANSVERSAL_STATE: Optional[str] = Header(None, convert_underscores=False)):
+    transversalState = TransversalState.parse_raw(X_TOPOSOID_TRANSVERSAL_STATE.replace("'", "\""))
+    try:                   
+        #ファイルはknowledgeForTable.tableReference.reference.urlに保存されている前提
+        #if not knowledgeForTable.tableReference.reference.isWholeSentence:
+        target = convertTable2Tsv(knowledgeForTable)
+        #target = "contents/" + knowledgeForTable.tableReference.reference.url.replace(os.environ["TOPOSOID_CONTENTS_URL"], "")
+        knowledgeForTable.tableReference.reference.url = os.environ["TOPOSOID_CONTENTS_URL"].replace("contents/", "") + target
+        response = JSONResponse(content=jsonable_encoder(RegisteredTableContentResult(knowledgeForTable=knowledgeForTable, statusInfo=StatusInfo(status="OK", message="")) ))
+        LOG.info(f"Saving table completed.[url:{knowledgeForTable.tableReference.reference.url}]", transversalState)
+        return response
+    except Exception as e:
+        LOG.error(traceback.format_exc(), transversalState)
+        return JSONResponse(content=jsonable_encoder(RegisteredTableContentResult(knowledgeForTable=knowledgeForTable, statusInfo=StatusInfo(status="ERROR", message=traceback.format_exc()))))
+
+
+
 @app.post("/registerDocument",
           summary='register document file')
 def registerDocument(document: Document, X_TOPOSOID_TRANSVERSAL_STATE: Optional[str] = Header(None, convert_underscores=False)):
