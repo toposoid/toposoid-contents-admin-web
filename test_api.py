@@ -287,6 +287,39 @@ class TestToposoidContentsAdminWeb(object):
 
 
 
+    def test_convertTable2(self):
+        featureId = str(uuid.uuid4())
+        target = f"contents/temporaryUse/{featureId}.xlsx"
+        shutil.copy("JAPANESE_TEST_TABLE.tsv",target)
+        shutil.copy("TABLE_TEST.xlsx",f"contents/temporaryUse/{featureId}!JAPANESE_TEST_TABLE.tsv" )
+
+        response = self.client.post("/convertTable",
+                            headers={"Content-Type": "application/json", "X_TOPOSOID_TRANSVERSAL_STATE": self.transversalState},
+                            json={
+                                "id": featureId,
+                                "tableReference":{
+                                "reference": {
+                                    "url": f"{os.environ['TOPOSOID_CONTENTS_URL']}temporaryUse/{featureId}.xlsx",
+                                    "surface": "データが",
+                                    "surfaceIndex": "0",
+                                    "isWholeSentence": False,
+                                    "originalUrlOrReference": "",
+                                    "metaInformations": []
+                                },
+                                "skipHeaderRows":0,
+                                "skipRowList":[],
+                                "multiHeaderRows":1, 
+                                "sheetNameForExcel": ""
+                                }
+                            })
+        assert response.status_code == 200
+        registTableContentResult = RegisteredTableContentResult.parse_obj(response.json())
+        assert registTableContentResult.statusInfo.status == "OK"        
+        assert os.path.exists(f"contents/temporaryUse/{registTableContentResult.knowledgeForTable.id}.tsv")
+        assert os.path.exists(f"contents/temporaryUse/{registTableContentResult.knowledgeForTable.id}.parquet")
+
+
+
     def test_registerDocument(self):
         documentId = str(uuid.uuid4())
         target = f"contents/temporaryUse/{documentId}.pdf"
