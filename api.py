@@ -38,6 +38,7 @@ import glob
 from pathlib import Path
 import magic
 import pandas as pd
+import numpy as np
 import io
 import csv
 
@@ -324,6 +325,20 @@ def convertTable2Tsv(knowledgeForTable:KnowledgeForTable, transversalState):
 
         os.remove(target)
         convert_filaname = ".".join(list(target.split('.'))[:-1]) + ".tsv"
+        for columnName in list(df.columns.values):
+            #ref. https://qiita.com/Kent-747/items/08c1f5c642d4e2c7324c
+            df[columnName] = df[columnName].fillna(method='ffill') #Handling merged cells
+            df[columnName] = df[columnName].astype(str) #Cast to string type
+            df[columnName] = df[columnName].replace("_x000D_", "", regex=True) #Remove CRCF code from Excel
+            df[columnName] = df[columnName].str.strip() #Space Removal
+            df[columnName] = df[columnName].replace("\t", " ", regex=True) #Since the output is tab-delimited, tabs are converted to spaces.
+            df[columnName] = df[columnName].replace("\n", "", regex=True) #If there is a newline, convert it to an empty string
+            df[columnName] = df[columnName].replace("", np.nan) #Convert empty strings to NA
+        #Remove all NA columns
+        df = df.dropna(how='all', axis=1)
+        ##Remove all NA rows
+        df = df.dropna(how='all')
+
         df.to_csv(convert_filaname, index = False, sep='\t', header=False, encoding="utf-8")  
         for col in df.columns:
             if df[col].dtype == 'object':
@@ -387,11 +402,26 @@ def convertTable2Tsv(knowledgeForTable:KnowledgeForTable, transversalState):
                     
         os.remove(target)
         convert_filaname = ".".join(list(target.split('.'))[:-1]) + ".tsv"
+
+        for columnName in list(df.columns.values):
+            #ref. https://qiita.com/Kent-747/items/08c1f5c642d4e2c7324c
+            df[columnName] = df[columnName].fillna(method='ffill') #Handling merged cells
+            df[columnName] = df[columnName].astype(str) #Cast to string type
+            df[columnName] = df[columnName].replace("_x000D_", "", regex=True) #Remove CRCF code from Excel
+            df[columnName] = df[columnName].str.strip() #Space Removal
+            df[columnName] = df[columnName].replace("\t", " ", regex=True) #Since the output is tab-delimited, tabs are converted to spaces.
+            df[columnName] = df[columnName].replace("\n", "", regex=True) #If there is a newline, convert it to an empty string
+            df[columnName] = df[columnName].replace("", np.nan) #Convert empty strings to NA
+        #Remove all NA columns
+        df = df.dropna(how='all', axis=1)
+        ##Remove all NA rows
+        df = df.dropna(how='all')
         df.to_csv(convert_filaname, index = False, sep='\t', encoding="utf-8")  
+
         for col in df.columns:
             if df[col].dtype == 'object':
                 df[col] = df[col].astype(str)
-        df.to_parquet(".".join(list(target.split('.'))[:-1]) + ".parquet")   
+        df.to_parquet(".".join(list(target.split('.'))[:-1]) + ".parquet", index=False)   
              
         return convert_filaname
     else:
