@@ -100,7 +100,7 @@ def registerTable(knowledgeForTable:KnowledgeForTable, X_TOPOSOID_TRANSVERSAL_ST
     try:                   
         #ファイルはknowledgeForTable.tableReference.reference.urlに保存されている前提
         #if not knowledgeForTable.tableReference.reference.isWholeSentence:
-        target = convertTable2Tsv(knowledgeForTable)
+        target = convertTable2Tsv(knowledgeForTable, transversalState)
         #target = "contents/" + knowledgeForTable.tableReference.reference.url.replace(os.environ["TOPOSOID_CONTENTS_URL"], "")
         knowledgeForTable.tableReference.reference.url = save(FeatureType.TABLE, knowledgeForTable.id, target)
         response = JSONResponse(content=jsonable_encoder(RegisteredTableContentResult(knowledgeForTable=knowledgeForTable, statusInfo=StatusInfo(status="OK", message="")) ))
@@ -141,7 +141,7 @@ def registerTable(knowledgeForTable:KnowledgeForTable, X_TOPOSOID_TRANSVERSAL_ST
     try:                   
         #ファイルはknowledgeForTable.tableReference.reference.urlに保存されている前提
         #if not knowledgeForTable.tableReference.reference.isWholeSentence:
-        target = convertTable2Tsv(knowledgeForTable)
+        target = convertTable2Tsv(knowledgeForTable, transversalState)
         #target = "contents/" + knowledgeForTable.tableReference.reference.url.replace(os.environ["TOPOSOID_CONTENTS_URL"], "")
         knowledgeForTable.tableReference.reference.url = os.environ["TOPOSOID_CONTENTS_URL"].replace("contents/", "") + target
         response = JSONResponse(content=jsonable_encoder(RegisteredTableContentResult(knowledgeForTable=knowledgeForTable, statusInfo=StatusInfo(status="OK", message="")) ))
@@ -297,22 +297,30 @@ def convertImageSize(knowledgeForImage:KnowledgeForImage):
     return target, x, y, w, h
 
 
-def convertTable2Tsv(knowledgeForTable:KnowledgeForTable):
+def convertTable2Tsv(knowledgeForTable:KnowledgeForTable, transversalState):
     target = "contents/" +knowledgeForTable.tableReference.reference.url.replace(os.environ["TOPOSOID_CONTENTS_URL"], "")
     input = knowledgeForTable.tableReference
     #Excelかテキストかそれ以外かを見分ける
     mime = magic.from_file(target, mime=True)    
     if mime == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
         if len(input.skipRowList) == 0:
-            if input.sheetNameForExcel == "":
-                df = pd.read_excel(target, skiprows=input.skipHeaderRows, header=list(range(input.multiHeaderRows))) 
-            else:
-                df = pd.read_excel(target, skiprows=input.skipHeaderRows, header=list(range(input.multiHeaderRows)), sheet_name=input.sheetNameForExcel) 
-        else:
-            if input.sheetNameForExcel == "":
-                df = pd.read_excel(target, skiprows=input.skipRowList, header=list(range(input.multiHeaderRows))) 
-            else:
-                df = pd.read_excel(target, skiprows=input.skipRowList, header=list(range(input.multiHeaderRows)), sheet_name=input.sheetNameForExcel) 
+            try:
+                if input.sheetNameForExcel == "":
+                    df = pd.read_excel(target, skiprows=input.skipHeaderRows, header=list(range(input.multiHeaderRows))) 
+                else:
+                    df = pd.read_excel(target, skiprows=input.skipHeaderRows, header=list(range(input.multiHeaderRows)), sheet_name=input.sheetNameForExcel) 
+            except Exception as e:
+                LOG.warning(f"Failed to load table data using the specified options. Adjusting options to attempt recovery. {e}", transversalState)
+                df = pd.read_excel(target, skiprows=input.skipHeaderRows) 
+        else: 
+            try:
+                if input.sheetNameForExcel == "":
+                    df = pd.read_excel(target, skiprows=input.skipRowList, header=list(range(input.multiHeaderRows))) 
+                else:
+                    df = pd.read_excel(target, skiprows=input.skipRowList, header=list(range(input.multiHeaderRows)), sheet_name=input.sheetNameForExcel) 
+            except Exception as e:
+                LOG.warning(f"Failed to load table data using the specified options. Adjusting options to attempt recovery. {e}", transversalState)
+                df = pd.read_excel(target, skiprows=input.skipRowList) 
 
         os.remove(target)
         convert_filaname = ".".join(list(target.split('.'))[:-1]) + ".tsv"
@@ -327,7 +335,21 @@ def convertTable2Tsv(knowledgeForTable:KnowledgeForTable):
         max_length = 0
         is_variable = False
         foundFirstLine = False
+        #基本この時点でタブ区切りのファイルに限定される。
         with open(target, 'r', encoding='utf-8', newline='') as f:
+            for i, line in enumerate(f):
+                if len(input.skipRowList) == 0:
+                    if i < input.skipHeaderRows:
+                        continue
+                else:
+                    if i + 1 in input.skipRowList:continue
+
+                if foundFirstLine and not is_variable and max_length != len(line.split("\t")):
+                    is_variable = True
+                max_length = max(max_length, len(line.split("\t")))
+                foundFirstLine = True
+
+            """
             reader = csv.reader(f)            
             for i, row in enumerate(reader):
                 if len(input.skipRowList) == 0:
@@ -339,7 +361,8 @@ def convertTable2Tsv(knowledgeForTable:KnowledgeForTable):
                     is_variable = True
                 max_length = max(max_length, len(row))
                 foundFirstLine = True
-        
+            """
+
         col_names = list(range(max_length))
         if is_variable:
             #列が可変長の場合
@@ -350,13 +373,21 @@ def convertTable2Tsv(knowledgeForTable:KnowledgeForTable):
         else:
             #ヘッダを認識させられる時は、そうする。
             if len(input.skipRowList) == 0:
-                df = pd.read_csv(target, skiprows=input.skipHeaderRows, header=list(range(input.multiHeaderRows)))   
+                try:
+                    df = pd.read_csv(target, skiprows=input.skipHeaderRows, header=list(range(input.multiHeaderRows)), sep=None, engine='python')                   
+                except Exception as e:
+                    LOG.warning(f"Failed to load table data using the specified options. Adjusting options to attempt recovery. {e}", transversalState)
+                    df = pd.read_csv(target, skiprows=input.skipHeaderRows, sep=None, engine='python')
             else:
-                df = pd.read_csv(target, skiprows=input.skipRowList, header=list(range(input.multiHeaderRows)))  
-
+                try:
+                    df = pd.read_csv(target, skiprows=input.skipRowList, header=list(range(input.multiHeaderRows)), sep=None, engine='python')  
+                except Exception as e:
+                    LOG.warning(f"Failed to load table data using the specified options. Adjusting options to attempt recovery. {e}", transversalState)
+                    df = pd.read_csv(target, skiprows=input.skipRowList, sep=None, engine='python')
+                    
         os.remove(target)
         convert_filaname = ".".join(list(target.split('.'))[:-1]) + ".tsv"
-        df.to_csv(convert_filaname, index = False, sep='\t', header=False, encoding="utf-8")  
+        df.to_csv(convert_filaname, index = False, sep='\t', encoding="utf-8")  
         for col in df.columns:
             if df[col].dtype == 'object':
                 df[col] = df[col].astype(str)
