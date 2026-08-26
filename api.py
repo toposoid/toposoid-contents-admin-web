@@ -343,7 +343,7 @@ def convertTable2Tsv(knowledgeForTable:KnowledgeForTable, transversalState):
         for col in df.columns:
             if df[col].dtype == 'object':
                 df[col] = df[col].astype(str)
-        df.to_parquet(".".join(list(target.split('.'))[:-1]) + ".parquet")        
+        df.to_parquet(".".join(list(target.split('.'))[:-1]) + ".parquet", index=False)        
         return convert_filaname
             
     elif mime.startswith('text/'):            
